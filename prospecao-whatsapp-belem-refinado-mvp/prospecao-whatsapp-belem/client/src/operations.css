@@ -306,3 +306,6 @@
 .hunt-actions small { font-size: 0.64rem; }
 .hunt-actions small.ok { color: #8fdca2; }
 .hunt-actions small.warn { color: #e0b483; }
+/* links de contato no card: mesma tipografia da meta, com feedback de que são clicáveis */
+.lead-meta a.site-meta, .contact-hints > a { display: inline-flex; align-items: center; gap: 4px; color: inherit; text-decoration: none; cursor: pointer; }
+.lead-meta a.site-meta:hover, .contact-hints > a:hover { color: var(--lime-deep); text-decoration: underline; text-underline-offset: 2px; }

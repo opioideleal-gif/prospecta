@@ -5,7 +5,7 @@ import { buildApproaches, contextFromLead, objectiveFor, objectives, pickApproac
 import { leadPatchFromResearch } from "@/researchApply";
 import { withSearchListing } from "@shared/research";
 import { ApproachPanel, InterpretationPanel, PresencePanel } from "@/researchPanels";
-import { formatPhoneBr } from "@shared/normalize";
+import { formatPhoneBr, profileUrl, socialHandle, toUrl } from "@shared/normalize";
 import type { PageFacts } from "@shared/research";
 import { spreadsheetLeads } from "@/spreadsheetLeads";
 import { additionalLeads } from "@/additionalLeads";
@@ -54,6 +54,40 @@ function statusTone(status: LeadStatus) { return status === "Ganho" ? "won" : st
 function toDateInputValue(value?: string) { if (!value) return ""; const d = new Date(value); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; }
 const serviceBySegment: Record<Segment, string> = { Serviços: "Agenda + ordem de serviço + contratos", Imobiliárias: "Pipeline + follow-up + agenda", Distribuidoras: "Catálogo B2B + orçamento + pedidos", Outros: "Diagnóstico comercial inicial" };
 const colors = ["lime", "orange", "cyan", "pink", "violet", "blue"];
+
+/**
+ * Para onde cada dado de contato leva. Um cálculo só: o card e a ficha não podem discordar
+ * sobre se um site existe e para onde ele aponta. Handle inutilizável → sem link, o texto
+ * continua aparecendo (ausência de link não é ausência de dado).
+ */
+function contactLinksOf(lead: { site?: string; instagram?: string; email?: string }) {
+  const handle = socialHandle(lead.instagram);
+  return {
+    site: toUrl(lead.site),
+    instagram: handle ? profileUrl("instagram", handle) : undefined,
+    email: lead.email ? `mailto:${lead.email}` : undefined,
+  };
+}
+
+/** Célula CSV: sempre entre aspas, sem quebra de linha dentro (a planilha não é lugar de parágrafo). */
+export function csvCell(value: unknown) { return `"${String(value ?? "").replace(/"/g, '""').replace(/\r?\n/g, " ")}"`; }
+/** As 16 colunas de cadastro continuam nas mesmas posições; o que a pesquisa produziu vem depois,
+ *  com nome que diz de onde veio — assim a planilha mantém a camada de FATO separada da de
+ *  INTERPRETAÇÃO em vez de misturar "dor" com "possível ganho". */
+export const leadCsvHead = ["empresa", "segmento", "subsegmento", "telefone", "email", "site", "endereco", "prioridade", "score", "estagio", "proxima_acao", "proximo_followup", "dor", "oportunidade", "servico", "observacoes", "site_url", "whatsapp_url", "instagram_url", "pesquisa_de_site", "score_base", "motivos_do_score", "ganhos_possiveis", "sem_prova", "objetivo_comercial", "abordagem gerada"];
+export function leadCsvCells(lead: Lead): string[] {
+  const links = contactLinksOf(lead);
+  const whatsapp = lead.phone ? `https://wa.me/${normalizePhone(lead.phone)}` : undefined;
+  const read = !lead.facts ? "não lido" : lead.facts.fetchOk ? `lido em ${formatDate(lead.researchedAt || lead.facts.retrievedAt)}` : `não respondeu (${lead.facts.httpStatus || "sem conexão"})`;
+  const style = lead.approachStyle ?? "Natural";
+  // `?? ""` explícito em cada campo opcional: a planilha não pode receber "undefined" escrito
+  const cells: unknown[] = [
+    lead.name, lead.segment, lead.intelligence?.subsegment, lead.phone, lead.email, lead.site, lead.location, lead.priority, lead.score, lead.status ?? "Novo", lead.nextAction, lead.nextActionAt ? new Date(lead.nextActionAt).toISOString().slice(0, 10) : "", lead.pain, lead.opportunity, lead.service, lead.notes,
+    links.site, whatsapp, links.instagram, read, lead.scoreBase ?? lead.score, scoreReasonLines(lead.scoreDeltas ?? [], []).lines.join(" | "), (lead.interpretation?.detectedProblems ?? []).join(" | "), (lead.interpretation?.unverified ?? []).join(" | "), lead.objective ?? objectiveFor({ opportunity: lead.opportunity, service: lead.service, pain: lead.pain, segment: lead.segment, facts: lead.facts }), outboundText(lead, style),
+  ];
+  if (cells.length !== leadCsvHead.length) throw new Error(`CSV: ${cells.length} células para ${leadCsvHead.length} colunas`);
+  return cells.map((value) => (value == null ? "" : String(value)));
+}
 
 function normalizePhone(phone: string) { const digits = phone.replace(/\D/g, ""); return digits.startsWith("55") ? digits : `55${digits}`; }
 function normalize(value: string) { return value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim(); }
@@ -130,10 +164,8 @@ export default function Home() {
   function scheduleFollowUpOn(lead: Lead, dateInput: string) { if (!dateInput) return; const at = new Date(`${dateInput}T09:00:00`).toISOString(); logLeadEvent(lead, "Follow-up agendado", { nextAction: "follow-up", nextActionAt: at }); notify(`Follow-up para ${formatDate(at)}`); }
   function completeFollowUp(lead: Lead) { if (!lead.nextActionAt) { notify("Nada para concluir"); return; } logLeadEvent(lead, "Follow-up concluído", { nextActionAt: undefined, nextAction: "responder" }); notify("Follow-up concluído · estágio não alterado"); }
   function exportCsv() {
-    const head = ["empresa", "segmento", "subsegmento", "telefone", "email", "site", "endereco", "prioridade", "score", "estagio", "proxima_acao", "proximo_followup", "dor", "oportunidade", "servico", "observacoes"];
-    const esc = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""').replace(/\r?\n/g, " ")}"`;
-    const lines = filtered.map((lead) => [lead.name, lead.segment, lead.intelligence?.subsegment, lead.phone, lead.email, lead.site, lead.location, lead.priority, lead.score, lead.status ?? "Novo", lead.nextAction, lead.nextActionAt ? new Date(lead.nextActionAt).toISOString().slice(0, 10) : "", lead.pain, lead.opportunity, lead.service, lead.notes].map(esc).join(";"));
-    const blob = new Blob([`\uFEFF${head.join(";")}\n${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
+    const lines = filtered.map((lead) => leadCsvCells(lead).map(csvCell).join(";"));
+    const blob = new Blob([`\uFEFF${leadCsvHead.join(";")}\n${lines.join("\n")}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url; link.download = `prospecta-belem-${new Date().toISOString().slice(0, 10)}.csv`; link.click();
@@ -260,7 +292,7 @@ function LeadsPage({ filtered, stats, query, setQuery, segment, setSegment, prio
       <div className="filters-row"><label className="search-field"><Search size={17} /><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar empresa, segmento, dor ou serviço..." /></label><div className="filter-pills"><button className={segment === "Todos" ? "filter-pill selected" : "filter-pill"} onClick={() => setSegment("Todos")}>Todos <b>{stats.total}</b></button>{(["Serviços", "Imobiliárias", "Distribuidoras"] as Segment[]).map((s) => <button key={s} className={segment === s ? "filter-pill selected" : "filter-pill"} onClick={() => setSegment(s)}>{s}</button>)}</div>
         <div className="filters-extra"><label className="select-field"><span>Prioridade</span><select value={priority} onChange={(e) => setPriority(e.target.value as "Todas" | Priority)}><option>Todas</option><option>Alta</option><option>Média</option></select><ChevronDown size={15} /></label><label className="select-field"><span>Status</span><select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as "Todos" | LeadStatus)}><option>Todos</option>{statusOptions.map((s) => <option key={s}>{s}</option>)}</select><ChevronDown size={15} /></label><label className="select-field"><span>Follow-up</span><select value={followUpFilter} onChange={(e) => setFollowUpFilter(e.target.value as "Todos" | "vencido" | "hoje" | "nenhum")}><option value="Todos">Todos</option><option value="vencido">Vencidos</option><option value="hoje">Hoje</option><option value="nenhum">Sem data</option></select><ChevronDown size={15} /></label><label className="select-field"><span>Ordenar</span><select value={sortBy} onChange={(e) => setSortBy(e.target.value as "score" | "followup" | "nome")}><option value="score">Score</option><option value="followup">Follow-up</option><option value="nome">Nome</option></select><ChevronDown size={15} /></label>{filterCount > 0 && <button className="outline-button" onClick={clearFilters}><X size={13} /> Limpar filtros</button>}</div>
       </div></section>
-    <section className="lead-list">{filtered.map((lead, index) => { const stage = lead.status ?? "Novo"; const group = statusTone(stage); return <article className={`lead-card ${followUpState(lead) === "vencido" ? "is-overdue" : ""}`} key={lead.id}><div className={`avatar avatar-${lead.color}`}>{lead.initials}</div><div className="lead-main"><div className="lead-title-row"><h3>{lead.name}</h3><span className={`priority ${lead.priority === "Alta" ? "high" : "medium"}`}>{lead.demo ? "DEMO · " : ""}{lead.priority}</span><span className={`status-pill ${group}`}>{stage}</span></div><div className="lead-meta"><span>{lead.segment} · {lead.intelligence?.subsegment}</span><span className="meta-separator">·</span><span>{lead.location}</span>{lead.site && <span className="site-meta"><Globe2 size={12} /> {lead.site}</span>}{lead.instagram && <span className="site-meta"><Instagram size={12} /> {lead.instagram}</span>}</div><div className="contact-hints"><span><Phone size={11} /> {lead.phone || "sem telefone"}</span>{lead.email && <span><Mail size={11} /> {lead.email}</span>}<span className={`lead-followup fu-${followUpState(lead)}`}><CalendarClock size={11} /> {dueLabel(lead)}</span></div><p className="opportunity"><strong>Dor provável:</strong> {lead.intelligence?.probablePains[0]} <span className="opportunity-arrow">→</span> {lead.intelligence?.opportunities[0]}</p></div><div className="lead-score" title={scoreEvidenceHint(lead)}><span>Score</span><strong>{lead.score}</strong><div className="score-bar"><i style={{ width: `${lead.score}%` }} /></div><small>{scoreLabel(lead.score)}{scoreEvidenceTag(lead)}</small></div><div className="lead-actions"><label className="status-select"><select value={stage} onChange={(e) => updateStatus(lead.id, e.target.value as LeadStatus)}>{statusOptions.map((s) => <option key={s}>{s}</option>)}</select><ChevronDown size={13} /></label>{lead.phone ? <button className="whatsapp-button" onClick={() => openWhatsApp(lead)}><MessageCircle size={16} /> WhatsApp</button> : <button className="outline-button" onClick={() => openWhatsApp(lead)} title="Lead sem telefone: copia a mensagem para outro canal"><Clipboard size={15} /> Copiar</button>}<button className="more-button" onClick={() => setSelectedLead(lead)} aria-label="Abrir ficha da empresa"><MoreHorizontal size={18} /></button></div></article>; })}
+    <section className="lead-list">{filtered.map((lead, index) => { const stage = lead.status ?? "Novo"; const group = statusTone(stage); return <article className={`lead-card ${followUpState(lead) === "vencido" ? "is-overdue" : ""}`} key={lead.id}><div className={`avatar avatar-${lead.color}`}>{lead.initials}</div><div className="lead-main"><div className="lead-title-row"><h3>{lead.name}</h3><span className={`priority ${lead.priority === "Alta" ? "high" : "medium"}`}>{lead.demo ? "DEMO · " : ""}{lead.priority}</span><span className={`status-pill ${group}`}>{stage}</span></div><div className="lead-meta"><span>{lead.segment} · {lead.intelligence?.subsegment}</span><span className="meta-separator">·</span><span>{lead.location}</span>{lead.site && (() => { const url = contactLinksOf(lead).site; return url ? <a className="site-meta" href={url} target="_blank" rel="noreferrer" title="Abrir o site"><Globe2 size={12} /> {lead.site}</a> : <span className="site-meta"><Globe2 size={12} /> {lead.site}</span>; })()}{lead.instagram && (() => { const url = contactLinksOf(lead).instagram; return url ? <a className="site-meta" href={url} target="_blank" rel="noreferrer" title="Abrir o Instagram"><Instagram size={12} /> {lead.instagram}</a> : <span className="site-meta"><Instagram size={12} /> {lead.instagram}</span>; })()}</div><div className="contact-hints"><span><Phone size={11} /> {lead.phone || "sem telefone"}</span>{lead.email && (contactLinksOf(lead).email ? <a href={contactLinksOf(lead).email} title="Escrever para o lead"><Mail size={11} /> {lead.email}</a> : <span><Mail size={11} /> {lead.email}</span>)}<span className={`lead-followup fu-${followUpState(lead)}`}><CalendarClock size={11} /> {dueLabel(lead)}</span></div><p className="opportunity"><strong>Dor provável:</strong> {lead.intelligence?.probablePains[0]} <span className="opportunity-arrow">→</span> {lead.intelligence?.opportunities[0]}</p></div><div className="lead-score" title={scoreEvidenceHint(lead)}><span>Score</span><strong>{lead.score}</strong><div className="score-bar"><i style={{ width: `${lead.score}%` }} /></div><small>{scoreLabel(lead.score)}{scoreEvidenceTag(lead)}</small></div><div className="lead-actions"><label className="status-select"><select value={stage} onChange={(e) => updateStatus(lead.id, e.target.value as LeadStatus)}>{statusOptions.map((s) => <option key={s}>{s}</option>)}</select><ChevronDown size={13} /></label>{lead.phone ? <button className="whatsapp-button" onClick={() => openWhatsApp(lead)}><MessageCircle size={16} /> WhatsApp</button> : <button className="outline-button" onClick={() => openWhatsApp(lead)} title="Lead sem telefone: copia a mensagem para outro canal"><Clipboard size={15} /> Copiar</button>}<button className="more-button" onClick={() => setSelectedLead(lead)} aria-label="Abrir ficha da empresa"><MoreHorizontal size={18} /></button></div></article>; })}
       {!filtered.length && <div className="empty-state"><Search size={23} /><strong>Nenhuma empresa encontrada</strong><span>{filterCount ? "Ajuste ou limpe os filtros." : "Importe um CSV ou cadastre uma empresa."}</span>{filterCount > 0 && <button className="outline-button" onClick={clearFilters}>Limpar filtros</button>}</div>}</section></div>; }
 
 function Opportunities({ leads, statuses, onSelect, onOpen, onHunt }: { leads: Lead[]; statuses: Record<string, LeadStatus>; onSelect: (lead: Lead) => void; onOpen: (lead: Lead) => void; onHunt: (lead: Lead) => void }) {
@@ -300,13 +332,13 @@ function LeadModal({ lead, status, onClose, onOpen, onOpenText, onPrepare, onCop
   const stageGroup = statusTone(status);
   const events = lead.events || [];
   useEffect(() => { const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); }; window.addEventListener("keydown", onKey); return () => window.removeEventListener("keydown", onKey); }, [onClose]);
-  const siteUrl = lead.site ? (/^https?:\/\//i.test(lead.site) ? lead.site : `https://${lead.site}`) : undefined;
+  const links = contactLinksOf(lead);
   const fields: Array<{ label: string; value?: string; href?: string; icon: React.ReactNode }> = [
     { label: "Telefone", value: lead.phone ? formatPhoneBr(lead.phone) || lead.phone : undefined, href: lead.phone ? `tel:+${normalizePhone(lead.phone)}` : undefined, icon: <Phone size={11} /> },
     { label: "WhatsApp", value: lead.phone ? `${formatPhoneBr(lead.phone)} · ${normalizePhone(lead.phone)}` : undefined, href: lead.phone ? `https://wa.me/${normalizePhone(lead.phone)}` : undefined, icon: <MessageCircle size={11} /> },
-    { label: "Site", value: lead.site, href: siteUrl, icon: <Globe2 size={11} /> },
-    { label: "Instagram", value: lead.instagram, href: lead.instagram ? `https://instagram.com/${lead.instagram.replace(/^@/, "")}` : undefined, icon: <Instagram size={11} /> },
-    { label: "E-mail", value: lead.email, href: lead.email ? `mailto:${lead.email}` : undefined, icon: <Mail size={11} /> },
+    { label: "Site", value: lead.site, href: links.site, icon: <Globe2 size={11} /> },
+    { label: "Instagram", value: lead.instagram, href: links.instagram, icon: <Instagram size={11} /> },
+    { label: "E-mail", value: lead.email, href: links.email, icon: <Mail size={11} /> },
     { label: "Localização", value: lead.location, icon: <MapPin size={11} /> },
   ];
   return (

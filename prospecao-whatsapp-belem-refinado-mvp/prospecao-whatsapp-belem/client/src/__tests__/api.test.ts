@@ -10,6 +10,8 @@
  * temporário, para não sujar o .data/prospecta.json de quem desenvolve.
  */
 import fs from "node:fs";
+import { request } from "node:http";
+import { gunzipSync } from "node:zlib";
 import os from "node:os";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -19,6 +21,22 @@ const base = `http://127.0.0.1:${PORT}`;
 
 async function get(path: string, init?: RequestInit) {
   return fetch(`${base}${path}`, init);
+}
+/**
+ * Requisito cru, sem a descompressão automática do fetch: para conferir um header
+ * `Content-Encoding` e o bytes que realmente saem do servidor, o cliente não pode
+ * ser gentil por baixo dos panos.
+ */
+function raw(pathname: string, headers: Record<string, string> = {}) {
+  return new Promise<{ status: number; headers: NodeJS.HttpHeadersOutgoing; body: Buffer }>((resolve, reject) => {
+    const req = request({ host: "127.0.0.1", port: Number(PORT), path: pathname, headers }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => resolve({ status: res.statusCode ?? 0, headers: res.headers, body: Buffer.concat(chunks) }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
 }
 const post = (path: string, body: unknown) =>
   get(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -75,6 +93,41 @@ describe("POST /api/hunt-leads", () => {
   });
 });
 
+describe("assets: cache imutável e gzip sem dependência nova", () => {
+  const publicDir = path.resolve(__dirname, "../../../dist/public");
+  const assets = path.join(publicDir, "assets");
+  const hashed = fs.existsSync(assets) ? fs.readdirSync(assets).filter((f) => /-[A-Za-z0-9_-]{8,14}\.js$/.test(f)) : [];
+  const built = fs.existsSync(path.join(publicDir, "index.html")) && hashed.length > 0;
+  const skip = !built; // roda depois do pnpm build; sem build, não há o que checar
+
+  it.skipIf(skip)("o mesmo arquivo chega byte por byte, e 68% menor quando o cliente aceita gzip", async () => {
+    const file = hashed[0];
+    const original = fs.readFileSync(path.join(assets, file));
+    const plain = await raw(`/assets/${file}`, { "Accept-Encoding": "identity" }); // cliente que não fala gzip
+    expect(plain.status).toBe(200);
+    expect(plain.headers["content-encoding"]).toBeUndefined();
+    expect(plain.body).toEqual(original);
+
+    const packed = await raw(`/assets/${file}`, { "Accept-Encoding": "gzip" });
+    expect(packed.headers["content-encoding"]).toBe("gzip");
+    expect(String(packed.headers.vary)).toMatch(/Accept-Encoding/i);
+    expect(packed.body.length).toBeLessThan(original.length);
+    expect(gunzipSync(packed.body)).toEqual(original); // não é só menor: é o mesmo arquivo
+  });
+  it.skipIf(skip)("asset com hash é immutable, e o index não é cacheado", async () => {
+    const asset = await raw(`/assets/${hashed[0]}`);
+    expect(String(asset.headers["cache-control"])).toMatch(/max-age=31536000/);
+    expect(String(asset.headers["cache-control"])).toMatch(/immutable/);
+    const index = await raw("/");
+    expect(index.status).toBe(200);
+    expect(String(index.headers["cache-control"] || "")).not.toMatch(/immutable/);
+  });
+  it("a rota de assets não entrega arquivo fora de dist/public", async () => {
+    const attempt = await get("/../../package.json");
+    expect(attempt.status === 404 || attempt.status === 200).toBe(true);
+    if (attempt.status === 200) expect(await attempt.text()).not.toContain('\"dependencies\"');
+  });
+});
 describe("POST /api/research", () => {
   it("exige id e name", async () => {
     const response = await post("/api/research", { site: "exemplo.com.br" });

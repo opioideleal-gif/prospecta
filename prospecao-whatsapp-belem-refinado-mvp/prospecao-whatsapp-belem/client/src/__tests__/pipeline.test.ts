@@ -9,8 +9,9 @@
 import { describe, expect, it } from "vitest";
 import { buildResearchRecord, mergeFacts, parsePageFacts, unverifiedFacts, verifiedFacts, withSearchListing } from "@shared/research";
 import { formatPhoneBr, toWhatsAppNumber } from "@shared/normalize";
+import { csvCell, leadCsvCells, leadCsvHead } from "@/pages/Home";
 import { buildApproaches, contextFromLead, objectiveFor, pickApproachText, type Objective } from "@/approach";
-import { evidenceScore, interpretLead } from "@/intelligence";
+import { evidenceScore, interpretLead, scoreReasonLines } from "@/intelligence";
 import { leadPatchFromResearch } from "@/researchApply";
 
 const HOME_HTML = `<!doctype html><html><head><title>Padaria Pão Quente | Belém</title>
@@ -475,5 +476,51 @@ describe("11-12. resultado editável, com precedência do rascunho e WhatsApp ap
   it("o link de WhatsApp usa o número canônico do lead", () => {
     const { patch } = leadPatchFromResearch({}, facts);
     expect(`https://wa.me/${toWhatsAppNumber(patch.phone)}?text=${encodeURIComponent(pickApproachText(approaches, "Natural"))}`).toMatch(/^https:\/\/wa\.me\/5591999887766\?text=/);
+  });
+});
+
+
+describe("10. o CSV exportado carrega a pesquisa junto, sem misturar as camadas", () => {
+  const col = (name: string) => leadCsvHead.indexOf(name);
+  const csvFacts = parsePageFacts(HOME_HTML, URL);
+  const base = { ...emptyLead, phone: "91999887766", site: "paoquente.com.br", instagram: "https://instagram.com/paoquentebel", email: "contato@paoquente.com.br" };
+
+  it("cabeçalho e células têm o mesmo tamanho e as 16 colunas de cadastro não saíram do lugar", () => {
+    const cells = leadCsvCells(base as never);
+    expect(cells).toHaveLength(leadCsvHead.length);
+    expect(leadCsvHead.slice(0, 16)).toEqual(["empresa", "segmento", "subsegmento", "telefone", "email", "site", "endereco", "prioridade", "score", "estagio", "proxima_acao", "proximo_followup", "dor", "oportunidade", "servico", "observacoes"]);
+  });
+  it("sem pesquisa as colunas novas ficam vazias ou dizem 'não lido' — nunca um palpite", () => {
+    const cells = leadCsvCells(base as never);
+    expect(cells[col("pesquisa_de_site")]).toBe("não lido");
+    expect(cells[col("ganhos_possiveis")]).toBe("");
+    expect(cells[col("motivos_do_score")]).toBe("");
+    expect(cells[col("score_base")]).toBe(String(base.score));
+  });
+  it("os links canônicos saem prontos: https, wa.me com DDI e perfil do Instagram", () => {
+    const cells = leadCsvCells(base as never);
+    expect(cells[col("site_url")]).toBe("https://paoquente.com.br");
+    expect(cells[col("whatsapp_url")]).toBe(`https://wa.me/${toWhatsAppNumber(base.phone)}`);
+    expect(cells[col("instagram_url")]).toBe("https://instagram.com/paoquentebel"); // URL de perfil, não a busca
+  });
+  it("com leitura o CSV repete o que a tela mostra: motivos do score e mensagem", () => {
+    const researched = { ...base, facts: csvFacts, interpretation: interpretLead({ name: "Padaria Pão Quente", segment: "Serviços" }, csvFacts) };
+    const scored = evidenceScore(researched, csvFacts, base);
+    const cells = leadCsvCells({ ...researched, score: scored.score, scoreBase: scored.base, scoreDeltas: scored.deltas } as never);
+    expect(cells[col("pesquisa_de_site")]).toMatch(/^lido em /);
+    expect(cells[col("motivos_do_score")]).toBe(scoreReasonLines(scored.deltas, []).lines.join(" | "));
+    expect(cells[col("motivos_do_score")]).toMatch(/^\+\d+ /);
+    expect(cells[col("ganhos_possiveis")]).toMatch(/possível ganho em/);
+    expect(cells[col("sem_prova")]).toMatch(/não verificada|não identificado/);
+    expect(cells[col("abordagem gerada")]).toContain("Padaria Pão Quente");
+    expect(cells[col("abordagem gerada")]).not.toMatch(/undefined|null/);
+  });
+  it("rascunho editado pelo vendedor é o que sai no CSV", () => {
+    const edited = { ...base, approachStyle: "Natural" as const, approachDraft: { Natural: "Fecho com vocês na quinta, sem rodeios." } };
+    expect(leadCsvCells(edited as never)[col("abordagem gerada")]).toBe("Fecho com vocês na quinta, sem rodeios.");
+  });
+  it("célula escapa aspa e não deixa quebra de linha na planilha", () => {
+    expect(csvCell('disseram "sim" em 2 canais\nsegunda linha')).toBe('"disseram ""sim"" em 2 canais segunda linha"');
+    expect(csvCell(undefined)).toBe('""');
   });
 });

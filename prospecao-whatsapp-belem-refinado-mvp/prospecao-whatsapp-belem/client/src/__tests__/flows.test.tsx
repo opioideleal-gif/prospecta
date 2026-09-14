@@ -90,6 +90,56 @@ describe("base de leads preservada", () => {
   });
 });
 
+describe("card do lead: contato que abre de verdade", () => {
+  async function openLeads() {
+    await tab("Leads");
+    await setInput(q(".search-field input"), "");
+  }
+  function firstCardWith(hrefPart: RegExp) {
+    const cards = qa(".lead-card");
+    for (const card of cards) {
+      const link = Array.from(card.querySelectorAll("a")).find((a) => hrefPart.test(a.getAttribute("href") || ""));
+      if (link) return { card, link: link as HTMLElement };
+    }
+    return undefined;
+  }
+
+  it("o site do lead é um link https que abre em outra aba", async () => {
+    await openLeads();
+    const hit = firstCardWith(/^https:\/\//);
+    expect(hit).toBeTruthy();
+    expect(hit!.link.getAttribute("target")).toBe("_blank");
+    expect(hit!.link.getAttribute("rel")).toContain("noreferrer");
+    expect((hit!.link.textContent || "").length).toBeGreaterThan(3);
+  });
+  it("o e-mail do lead abre o cliente de mailto, sem navegar na aplicação", async () => {
+    await openLeads();
+    const hit = firstCardWith(/^mailto:/);
+    expect(hit).toBeTruthy();
+    expect(hit!.link.getAttribute("target")).toBeNull(); // mailto não precisa de nova aba
+    expect(hit!.link.getAttribute("href")).toMatch(/^mailto:[^@\s]+@[^@\s]+$/);
+  });
+  it("o Instagram cadastrado como URL vira link para o perfil, não para a busca", async () => {
+    await openLeads();
+    const instagram = qa(".lead-card a.site-meta").filter((a) => /instagram\.com/.test(a.getAttribute("href") || ""));
+    expect(instagram.length).toBeGreaterThan(0);
+    for (const a of instagram) {
+      const path = (a.getAttribute("href") || "").replace("https://instagram.com/", "");
+      expect(path).not.toMatch(/^p\//);
+      expect(path).not.toMatch(/^\//);
+      expect(path.split("/").length).toBe(1); // só o @handle
+    }
+  });
+  it("lead sem site cadastrado não ganha link quebrado", async () => {
+    await openLeads();
+    const cardsWithBroken = qa(".lead-card a").filter((a) => {
+      const href = a.getAttribute("href") || "";
+      return href === "https://" || href === "https://undefined" || href === "mailto:" || href === "https://instagram.com/undefined";
+    });
+    expect(cardsWithBroken).toEqual([]);
+  });
+});
+
 describe("navegação entre as 6 abas", () => {
   it("alterna hoje, caçar, resultados, leads, oportunidades e playbook", async () => {
     const routes: Array<[string, string]> = [

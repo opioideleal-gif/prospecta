@@ -150,14 +150,31 @@ Detalhes de implementação:
   `server/schema.sql` tem 13 tabelas `companies/contacts/leads/...` prontas, mas **nenhum código as usa**.
 - **Score:** heurístico e determinístico (`client/src/intelligence.ts` casa-chave →
   dor/oportunidade/serviço recomendado), entre 35 e 98. **Não é IA chamada em runtime.**
-  `evidenceScore` aplica os achados da pesquisa por cima da heurística (+9 para catálogo sem
-  venda online, +6 para WhatsApp no site sem site próprio, −6 para site que não respondeu…) com
-  **teto de ±18 pontos** — e os deltas exibidos são exatamente os aplicados, com a evidência
-  que os gerou. Sem pesquisa, o score é o da base e o painel diz "ainda sem evidência externa".
+  `evidenceScore` aplica os achados da pesquisa por cima da heurística (+6 WhatsApp confirmado
+  no site, +5 Instagram linkado, +9 mostra o produto mas não vende online, +7 telefone que o
+  cadastro não tinha, +2 listagem em buscador — essa só a caça pode dar, −6 site que não
+  respondeu, −3 dor ainda não documentada) com **teto de ±18 pontos** — e os deltas exibidos são
+  exatamente os aplicados, com a evidência que os gerou. Sem pesquisa, o score é o da base e o
+  painel diz "ainda sem evidência externa".
+- **Contato no card:** site, Instagram e e-mail do lead são links reais (`toUrl`, `profileUrl`,
+  `mailto:`), calculados por `contactLinksOf` — a mesma função da ficha, para os dois lugares
+  nunca discordarem sobre para onde um dado aponta. Instagram salvo como URL vira link de
+  **perfil**, não de busca. Sem o dado, não existe link quebrado: some a âncora, o texto fica.
+- **CSV:** as 16 colunas de cadastro continuam nas mesmas posições (a importação é por nome de
+  cabeçalho e continua redonda); depois delas o arquivo leva o que a pesquisa produziu —
+  `site_url`, `whatsapp_url`, `instagram_url`, `pesquisa_de_site` (`lido em 12/09` ·
+  `não lido` · `não respondeu (HTTP 500)`), `score_base`, `motivos_do_score`, `ganhos_possiveis`,
+  `sem_prova`, `objetivo_comercial` e `abordagem gerada`. A mensagem exportada é **a mesma que o
+  app enviaria** (rascunho editado vence o gerado), e interpretação nunca se mistura com fato:
+  os campos têm nome que diz de onde vieram.
+- **Entrega:** o bundle é dividido em `react` / `vendor` / `icons` / app (o chunk da aplicação
+  caiu de 581 kB para ~270 kB), e o Express serve asset com hash no nome como
+  `immutable, max-age=31536000` com **gzip em streaming feito com `node:zlib`** — sem adicionar
+  dependência. O teste descompacta e compara byte a byte com o arquivo do disco.
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 91 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 104 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre

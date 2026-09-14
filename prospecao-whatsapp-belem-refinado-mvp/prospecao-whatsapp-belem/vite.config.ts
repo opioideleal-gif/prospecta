@@ -219,6 +219,18 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // React e o pacote de ícones saem do chunk da aplicação: mexer no Prospecta não
+        // invalida o cache do que não mudou. Nome/estrutura de telas ficam como estão.
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react";
+          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return "icons";
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port: 3000,
