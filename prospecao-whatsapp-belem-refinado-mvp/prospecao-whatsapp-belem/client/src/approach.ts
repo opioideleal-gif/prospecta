@@ -197,6 +197,12 @@ function problemSentence(ctx: ApproachContext): Sentence {
   const problem = ctx.detectedProblems?.[0];
   if (!problem) return {};
   const scope = ctx.subsegment || ctx.segment || "negócios como o de vocês";
+  // ganho apontado pela leitura: a frase descreve a PÁGINA (que foi lida), nunca a empresa inteira
+  const gain = /^possível ganho em (.+)$/i.exec(problem.trim());
+  if (gain && ctx.facts?.fetchOk) {
+    const area = gain[1].trim().replace(/\.$/, "");
+    return { text: `Pelo que vi no site de vocês, ${area} não aparece — se já rola por outro canal, me diz`, fact: `${area} não indicado na página lida (${ctx.facts.host})` };
+  }
   return { text: `De modo geral, em ${scope}, ${problem} é o que mais aparece`, fact: `dor provável (heurística, não confirmada): ${problem}` };
 }
 
@@ -304,6 +310,7 @@ export function contextFromLead(lead: {
   events?: { type: string; at: string }[];
   facts?: PageFacts;
   objective?: Objective;
+  interpretation?: { opportunity?: string; detectedProblems?: string[] };
 }): ApproachContext {
   const events = lead.events || [];
   const lastContact = [...events].reverse().find((e) => /Contato realizado|WhatsApp aberto|Mensagem enviada/i.test(e.type)) || events[events.length - 1];
@@ -320,8 +327,9 @@ export function contextFromLead(lead: {
     services: lead.facts?.services,
     products: lead.facts?.products,
     digitalPresence: lead.facts?.presence,
-    detectedProblems: lead.intelligence?.probablePains,
-    opportunity: lead.opportunity,
+    // o que a leitura produziu tem precedência sobre a heurística de cadastro
+    detectedProblems: lead.interpretation?.detectedProblems?.length ? lead.interpretation.detectedProblems : lead.intelligence?.probablePains,
+    opportunity: lead.interpretation?.opportunity ?? lead.opportunity,
     objective: lead.objective || objectiveFor({ opportunity: lead.opportunity, service: lead.service, pain: lead.pain, segment: lead.segment, facts: lead.facts }),
     score: lead.score,
     scoreReasons: lead.intelligence?.scoreReasons,

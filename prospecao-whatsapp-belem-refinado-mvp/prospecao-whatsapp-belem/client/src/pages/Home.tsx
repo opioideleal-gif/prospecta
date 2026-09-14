@@ -142,7 +142,7 @@ const row = rows.slice(1)[index]; const name = find(row, ["empresa", "nome", "ra
   }
   function openHuntedWhatsApp(item: HuntedLead) { const lead = huntedDrafts[item.id] ?? leadFromHunt(item); if (!item.phone) { void copyText(`hunt-${item.id}`, buildMessage(lead), "Sem telefone · mensagem copiada"); return; } window.open(`https://wa.me/${normalizePhone(item.phone)}?text=${encodeURIComponent(buildMessage(lead))}`, "_blank", "noopener,noreferrer"); notify(`WhatsApp aberto para ${formatPhoneBr(item.phone)}`); }
   async function researchLead(lead: Lead, force = false) {
-    if (!lead.site) { updateLead(lead.id, { researchError: "nenhum site cadastrado para ler", researchLoading: false }); notify("Sem site cadastrado — a ficha vai mostrar \"não verificado\", nunca \"não tem\"."); return; }
+    if (!lead.site) { notify("Nenhum site cadastrado — não há o que ler. A análise segue com o que está no cadastro e o painel marca tudo como não verificado."); return; }
     if (lead.facts && !force) { notify(`Dados já verificados em ${formatDate(lead.researchedAt ?? lead.research?.lastResearchAt ?? "")}. Use "Reler o site" só se a página mudou.`); return; }
     setSelectedLead((current) => current?.id === lead.id ? { ...current, researchLoading: true } : current);
     try {

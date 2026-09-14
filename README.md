@@ -89,6 +89,13 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
   nesses casos tudo fica `unknown`, então "o site não existe" é estruturalmente impossível.
 - `buildApproaches` só monta frase a partir de campo que existe. O que falta não aparece na
   mensagem e vai para a lista `de fora:` do painel, para você auditar o que foi deixado de lado.
+- A **análise alimenta o script**: `contextFromLead` dá precedência ao que a leitura produziu
+  (`interpretation.opportunity` e `interpretation.detectedProblems`) sobre a heurística de cadastro.
+  Um ganho vindo da página é dito como *"Pelo que vi no site de vocês, catálogo online não aparece —
+  se já rola por outro canal, me diz"*: fala da página lida, nunca da empresa inteira, e sai da lista
+  quando a leitura falhou (`detectedProblems` vazio por construção).
+- Lead sem site cadastrado **não** é tratado como erro: não há o que ler, o painel fica no estado
+  neutro "nada foi pesquisado" e a análise segue só com o cadastro.
 - O objetivo comercial (`Site`, `Landing page`, `Catálogo digital`, `E-commerce`, `Automação`,
   `WhatsApp`, `Presença digital`, `Serviço recorrente`, `Outro`) muda **a oferta**, nunca a
   afirmação sobre a empresa. Detectado da oportunidade, pode ser trocado na ficha e no Playbook.
@@ -114,7 +121,7 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 72 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 76 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada e persistência; `flows.test.tsx` (happy-dom) cobre

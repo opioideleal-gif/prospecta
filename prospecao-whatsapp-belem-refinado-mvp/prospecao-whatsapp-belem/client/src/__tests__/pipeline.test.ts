@@ -256,6 +256,24 @@ describe("6-9. abordagem usa só campos que existem, com 3 estilos e um objetivo
       expect(withoutPhone).not.toMatch(/\d{2,}/);
     }
   });
+  it("o ganho apontado pela leitura entra na mensagem falando do site, não da empresa", () => {
+    const researched = { ...emptyLead, phone: "91999887766", site: "paoquente.com.br", instagram: "@paoquentebel", facts, interpretation: interpretLead({ name: "Padaria Pão Quente", segment: "Serviços" }, facts) };
+    const list = buildApproaches({ ...contextFromLead(researched), objective: "E-commerce" });
+    const withGain = list.filter((a) => /Pelo que vi no site/i.test(a.text));
+    expect(withGain.length).toBeGreaterThan(0);
+    for (const a of withGain) {
+      // a frase afirma apenas sobre a página lida e oferece correção se já existir
+      expect(a.text).toMatch(/Pelo que vi no site de vocês/);
+      expect(a.text).toMatch(/me diz/);
+      expect(a.text).not.toMatch(/voc[eê]s n[aã]o t[eê]m|nunca tiveram|não vendem/i);
+      expect(a.usedFacts.join(" ")).toMatch(/não indicado na página lida/);
+    }
+  });
+  it("sem leitura a dor continua heurística e rotulada como hipótese", () => {
+    const bare = buildApproaches(contextFromLead({ ...emptyLead, intelligence: { probablePains: ["perder chamado entre o WhatsApp e a planilha"], subsegment: "manutenção" } }));
+    const hit = bare.find((a) => /De modo geral/.test(a.text));
+    expect(hit?.usedFacts.join(" ")).toMatch(/heurística, não confirmada/);
+  });
   it("frases sempre começam em maiúscula e terminam com ponto", () => {
     for (const a of forObjective("Automação")) {
       expect(a.text).toMatch(/^[A-ZÁÀÂÉÊÍÓÔÕÚÇ]/);
