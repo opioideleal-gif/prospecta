@@ -94,6 +94,9 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
   afirmação sobre a empresa. Detectado da oportunidade, pode ser trocado na ficha e no Playbook.
 - O estágio do funil + o histórico escolhem o enquadramento: quem já respondeu recebe
   "pegando o gancho do que vocês me responderam", quem está encerrado recebe um texto sem oferta.
+- **Cache com saída:** o lead guarda `facts` + `researchedAt`, então a ficha não relê o site a cada
+  abertura; o botão vira **Reler o site** e a releitura substitui análise e score **sem tocar** no que você
+  cadastrou nem no rascunho editado (uma releitura que falha também não apaga o que já foi verificado).
 - O texto gerado é **editável**; ao copiar ou abrir o WhatsApp sai o seu texto, não o original
   (que volta com "restaurar texto gerado").
 

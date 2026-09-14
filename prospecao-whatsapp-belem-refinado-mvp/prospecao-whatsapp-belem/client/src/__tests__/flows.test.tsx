@@ -418,6 +418,36 @@ describe("caça com ações por empresa (nada entra sozinho)", () => {
   });
 });
 
+describe("releitura do site sem perder o que o vendedor fez", () => {
+  const RESEARCH_OK = (facts: unknown, hash: string) => ({ record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: hash, signals: [], opportunities: [], sources: [], facts } });
+  it("com fato guardado o botão vira 'Reler o site' e a releitura substitui a análise, mantendo o cadastro", async () => {
+    const first = parsePageFacts(SITE_HTML, "https://www.imoveisbelem.belem.br");
+    stubRoutes({ "/api/research": RESEARCH_OK(first, "h1") });
+    await tab("Leads");
+    await setInput(q(".search-field input"), "Skye");
+    await click(q(".lead-card .more-button"));
+    await click(byText(".research-callout button", "Pesquisar empresa"));
+    expect(text()).toContain("DADOS ENCONTRADOS");
+    expect(byText(".research-callout button", "Reler o site")).toBeTruthy();
+    // edição do vendedor + cadastro prévio
+    await setInput(q(".rp-text"), "Mensagem que eu escrevi à mão.");
+    await tab("Leads");
+    await click(q(".lead-card .more-button"));
+    expect((q(".rp-text") as HTMLTextAreaElement).value).toBe("Mensagem que eu escrevi à mão.");
+
+    // segunda leitura: página sem Instagram/link algum → análise muda, cadastro e rascunho continuam
+    const second = parsePageFacts(`<html><head><title>Imóveis Belém</title></head><body><p>Só o endereço: Av. Presidente Vargas, 100</p></body></html>`, "https://www.imoveisbelem.belem.br");
+    stubRoutes({ "/api/research": RESEARCH_OK(second, "h2") });
+    await click(byText(".research-callout button", "Reler o site"));
+    expect((q(".rp-text") as HTMLTextAreaElement).value).toBe("Mensagem que eu escrevi à mão.");
+    expect((q(".contact-grid") as HTMLElement).textContent).toContain("@imoveisbelem_oficial"); // Instagram original preservado
+    expect(q(".rp-panel")?.textContent).toContain("não indicado na página"); // o que sumiu da página é lido como ausência na página
+    await tab("Leads");
+    await click(q(".lead-card .more-button"));
+    expect((q(".rp-text") as HTMLTextAreaElement).value).toBe("Mensagem que eu escrevi à mão.");
+  });
+});
+
 describe("pesquisa aplicada na ficha do lead", () => {
   async function openLeadWithSite() {
     await tab("Leads");
