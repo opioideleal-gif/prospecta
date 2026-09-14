@@ -93,6 +93,11 @@ const PAIRS: Array<{ label: string; fg: string; bg: string; min: number; scope: 
   { label: "plano 2 vs plano 1 (fio)", fg: "--px-edge", bg: "--px-surface-1", min: 1.06, scope: "depth" },
   { label: "plano 3 vs plano 2 (fio da ficha)", fg: "--px-edge-strong", bg: "--px-surface-2", min: 1.06, scope: "depth" },
   { label: "canvas vs plano de trabalho", fg: "--px-surface", bg: "--px-canvas", min: 1.05, scope: "depth" },
+  // a sidebar é escura nos DOIS temas, então o contraste dela é independente do token de tema —
+  // foi o "apagado" original, e agora é par medido: item de nav, atalho, nome e nota de privacidade
+  { label: "sidebar: item de navegação", fg: "--px-side-text", bg: "--px-side-bg", min: 4.5, scope: "text" },
+  { label: "sidebar: nome do perfil", fg: "--px-side-strong", bg: "--px-side-bg", min: 4.5, scope: "text" },
+  { label: "sidebar: meta (nota de privacidade)", fg: "--px-side-meta", bg: "--px-side-bg", min: 3, scope: "label" },
 ];
 
 function report(name: string, tokens: Record<string, string>) {
@@ -111,7 +116,8 @@ function report(name: string, tokens: Record<string, string>) {
 }
 
 const light = tokensOf(":root {");
-const dark = tokensOf("html.dark {");
+// o escuro é um diff sobre o claro (mesma cascade do CSS): tokens definidos só em :root valem nos dois
+const dark = { ...light, ...tokensOf("html.dark {") };
 const f1 = report("LIGHT  (:root)", light);
 const f2 = report("DARK   (html.dark)", dark);
 console.log(`\nresumo: ${f1.length} falhas no claro, ${f2.length} no escuro`);
