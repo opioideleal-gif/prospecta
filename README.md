@@ -260,8 +260,10 @@ Detalhes de implementação:
   em `--px-text-2`. No tier `utility` o bloco encolhe para a lista continuar lendo rápido.
 - **Início:** composição assimétrica `1,62fr / 0,82fr` — o trabalho (hero + busca + trilho de
   cinco passos) na coluna larga, o estado (buscas recentes + contagem da base) no rail. A busca é o
-  objeto mais importante da tela: 96px de altura, rótulo legível, CTA `HUNT →`, e ao receber foco
-  ela cresce um pouco, ilumina e **reduz o resto a 55%** enquanto você digita. O empty state é
+  objeto mais importante da tela: 122px de altura, rótulo legível, CTA `HUNT →`, e ao receber foco
+  ela cresce um pouco, ilumina e **desatura o resto** (`filter: saturate(.72)` no trilho, no rail e
+  na wordmark) enquanto você digita — nenhum texto entra em `opacity`, porque alpha derruba o
+  contraste junto com o fundo. O empty state é
   editorial (frase + três sementes clicáveis + `Começar pela busca`), não um retângulo dashed gigante.
 - **Ficha:** cinco turnos de leitura — `Who → Signals → Why this lead → Next step → Log` — cada um
   com um linha dizendo o que aquele bloco responde, e o conteúdo entra escalonado depois do FLIP. O
@@ -276,7 +278,7 @@ Detalhes de implementação:
   `stagger`; fechar a ficha devolve o painel ao card de origem (`returnSurface`). Com
   `prefers-reduced-motion` os elementos aparecem no estado final, sem deslocamento. Nenhum
   progresso é simulado: o que se move é o que o sistema está de fato fazendo.
-- **Testes:** `pnpm test` roda 118 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 120 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
@@ -295,6 +297,80 @@ Detalhes de implementação:
   histórico junto do evento "WhatsApp aberto". E-mail e site aparecem no card do lead, mas **não** são
   clicáveis — não há `mailto:` nem link de site (só na ficha).
 - **Type-check:** `pnpm check` passa limpo (TypeScript `strict: true`, 0 erros).
+
+## Direção artística: minimalista sem estar apagado
+
+A rodada não foi "deixar mais bonito": foi fechar a distância entre o que o design declara como
+hierarquia e o que o CSS realmente entrega. A régua: **minimalista mas não APAGADO, elegante mas não
+ILEGÍVEL, discreto mas não SEM CONTRASTE**. Uma fonte só (`Geist Variable`, `Inter` de fallback), e
+hierarquia feita de peso e cor — nunca de tamanho inflado nem de opacidade.
+
+**Auditoria, os dez maiores impactos (nesta ordem de dano):**
+
+1. **Um token quebrado derrubava a hierarquia inteira em silêncio.** `--px-w-title: 700` tinha
+   perdido o `;`, então o navegador lia `--px-w-title: 700 --px-w-score: 780` — valor *válido* para
+   custom property, lixo para `font:`. Todo título que pedia 700 caía para 400 e `--px-w-score`
+   passava a não existir. `tsc`, os 120 testes, o build, o `--ink`, o `--grid` e o `--dead` estavam
+   todos verdes, porque nenhum deles olha o bloco de tokens. Corrigido e, acima de tudo, virou gate
+   (item 10).
+2. **A escada de tinta tem cinco degraus medidos**, não três com sorte: PRIMARY `#0a1220`/`#f4f7fa`,
+   SECONDARY `#2f3d54`/`#c6cfdb`, TERTIARY `#4a5870`/`#94a1b4`, MUTED `#5c6a81`/`#7a8899`, DISABLED
+   `#8b97a8`/`#54606f`. Separados por razão de contraste entre degraus (1,31× a 1,85× — medir por
+   diferença de luminância engana), todos os níveis acima de 4,5:1 sobre canvas e card nos dois
+   temas; `disabled` é o único abaixo e só aparece em elemento desativado. `contrast-audit` mede
+   exatamente isso, nos dois temas, sobre os dois fundos.
+3. **`opacity` em texto importante acabou.** O placeholder da busca (`color: …; opacity: .8`) e o
+   `.lead-card--utility { opacity: .88 }` viraram cor real. Sobrou alpha onde ele é legítimo:
+   `:disabled` e tinta translúcida de decoração.
+4. **A ficha virou composição, não lista de blocos**: `grid-template-areas: "head" "main" "foot"`,
+   corpo em duas colunas `1,04fr / 1fr` (primary `1,24fr`), e as duas colunas separadas por um fio no
+   meio da gutter, não por caixa em volta de cada uma. Em ≤900px vira uma coluna e o fio sai junto.
+5. **Os cinco passos deixaram de ser pílulas** e viraram linha do tempo editorial: número
+   tipográfico sem disco, rótulo em caixa alta, uma frase de corpo; o estado (idle/next/now/done) vem
+   da busca digitada, da resposta que voltou e do que já foi lido — nunca de contador decorativo.
+6. **Restos de encarnação anterior removidos**: a seção do trilho guardava `@keyframes px-step-in`
+   sem dono, `html.dark … b { color: #0b1206 }` de um disco que já não existia e quatro `@media` que
+   competiam com o desenho novo. É assim que o mesmo seletor acaba sendo "consertado" duas vezes.
+7. **Duplicatas que a própria faxina empilhou saíram** (`.px-search-inner`, `.lead-list`,
+   `.px-theme`, `.px-card-why`, fundo/borda do `.px-rail-card`): `--dead` caiu de 20 → 11 → 9
+   achados, e os 9 que ficaram são sombra deliberada de camada legada, não engano.
+8. **Um CTA dominante por tela.** Na barra da ficha havia dois botões sólidos (`whatsapp-button` e
+   `dark-action`); agora `Abrir WhatsApp` é o único preenchido e "Gerar abordagem" virou o mais forte
+   dos secundários. No card, `PRÓXIMO →` é texto com acento, para não competir com o WhatsApp.
+9. **O rail lateral perdeu a caixa**: sem fundo, raio, borda e sombra, ele passa a ser a outra coluna
+   da mesma peça, marcada por um traço vertical que só existe quando existem duas colunas (≤1080px o
+   fio sai).
+10. **Gate novo dentro de `pnpm check`**: `cascade-check --lint` varre as quatro folhas e reclama de
+    comentário não fechado, `*/` órfão, `;;`, corpo de regra vazio e token definido dentro do valor de
+    outro. Ele foi validado reinjetando o bug do item 1 e o comentário quebrado e vendo as ocorrências
+    aparecerem — gate que nunca foi visto pegando o bug é decoração.
+
+**Hierarquia (5):** escala real — display 44–56, h1 28–40, h2 22–28, h3 18, corpo 15, navegação 14,
+meta 12, label 11; pesos 400 corpo / 500 navegação / 600 seção / 700 título / 780 número; label
+pequeno é `uppercase + letter-spacing + peso`, nunca tamanho minúsculo para parecer sofisticado;
+badge da sidebar é métrica encontrável (mono 12/600, `tabular-nums`, `min-width: 3ch`), não bolinha;
+`INÍCIO` tem mais contraste que `WORKSPACE` e o toggle CLARO/ESCURO se identifica por rótulo e borda,
+não por cor de ícone.
+
+**Composição (5):** grade do Início assimétrica declarada por áreas; corpo da ficha em dois planos
+com fio central; head do card quebra em ≥620px para o número não brigar com o título; gutter
+`clamp(24px, 3.4vw, 56px)` em vez de espaço mágico por breakpoint; `--grid` confere trilhos × áreas
+das 10 famílias em 16 larguras.
+
+**O que foi removido (5):** as pílulas dos sinais, que viraram registro tipográfico (`+ PHONE`,
+`PHONE · INFERIDO`, `PHONE · SÓ CADASTRO`, `PHONE · NÃO ENCONTRADO` — quatro bordas, quatro raios e
+duas sombras a menos por card, com DADOS/INTERPRETAÇÃO/AUSENTE intactos); o disco do passo atual; o
+fundo/borda/sombra do painel do rail; `opacity` em texto; `@keyframes` e media queries órfãos.
+
+**Animação (5):** `drawLine()` em `motion.ts` faz as linhas se desenharem (`--px-draw` de 0 a 1,
+`scaleX` no fio da timeline e `scaleY` no do rail) em vez de aparecerem num fade; sem GSAP, com
+`prefers-reduced-motion` ou no tier compacto o valor vai direto a 1, porque linha pela metade não
+explica a sequência; `data-motion` desceu do `<ol>` para os `<li>`, então a entrada dos cinco passos
+segue a ordem de leitura; o foco da busca desatura decoração em vez de apagar texto; o número do score
+vai ao acento no hover e o botão do WhatsApp é o único com glow da lista.
+
+Nada disso encosta em lógica: nenhum serviço, contrato de dados, rota ou campo mudou, e os 120 testes
+foram rodados sem editar uma assertion.
 
 ## Limitações conhecidas
 
