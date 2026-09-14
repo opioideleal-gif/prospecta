@@ -623,14 +623,15 @@ describe("início, card e movimento (redesign)", () => {
     // sem caça rodada, nada na navegação finge atividade
     expect(q(".side-nav .nav-dot")).toBeNull();
   });
-  it("a navegação agrupa por fase do produto e não finge estar ao vivo", () => {
-    expect(qa(".px-nav-group .sidebar-section-label").map((el) => el.textContent)).toEqual(["Discover", "Leads", "Intelligence", "Outreach"]);
-    expect(qa(".px-nav-group")[0].querySelectorAll(".nav-item")).toHaveLength(2);
-    expect(qa(".side-nav .nav-item").map((el) => el.textContent?.trim()).slice(0, 2)).toEqual(["Início", "Caçar Leads"]);
+  it("a navegação é uma lista legível, na ordem do dia, e não finge estar ao vivo", () => {
+    expect(qa(".sidebar .sidebar-section-label").map((el) => el.textContent)).toEqual(["Workspace", "Atalhos"]);
+    expect(qa(".side-nav .nav-item").map((el) => (el.textContent || "").trim().replace(/\s+\d+$/, "")).slice(0, 7)).toEqual(["Início", "Hoje", "Caçar Leads", "Resultados", "Leads", "Oportunidades", "Playbook"]);
+    expect(q(".nav-item.active")?.getAttribute("aria-current")).toBe("page");
     expect(q(".px-nav-rail")).toBeTruthy();
     // o antigo "Belém, PA" com ponto pulsando prometia feed ao vivo que não existe
     expect(q(".live-dot")).toBeNull();
-    expect(q(".top-actions")?.textContent).toContain("pipeline local");
+    // o chip diz o que a base é: escopo e tamanho, não "ao vivo"
+    expect(q(".top-actions")?.textContent).toContain("Base · Belém, PA · 157 empresas");
   });
   it("caçar pelo Início mostra melhor match, depois as outras, e lembra a busca", async () => {
     stubRoutes({ "/api/hunt-leads": { results: [HUNT_RESULT, { ...HUNT_RESULT, id: "h2", name: "Outra Exemplo" }] } });
@@ -757,10 +758,11 @@ describe("início, card e movimento (redesign)", () => {
     // o provider mora em App; montamos o mesmo par para checar a alternância real
     await act(async () => { themed.render(<ThemeProvider defaultTheme="dark" switchable><Home /></ThemeProvider>); });
     expect(document.documentElement.classList.contains("dark")).toBe(true);
-    // o botão nomeia o que ele VAI fazer: no escuro, ele oferece o claro
-    const toggle = holder.querySelector(".px-theme");
-    expect(toggle?.textContent).toContain("Claro");
-    await click(toggle);
+    // a pílula mostra o tema em uso (Escuro, pressionado) e a célula que leva ao Claro
+    const cells = [...holder.querySelectorAll(".px-theme-cell")] as HTMLButtonElement[];
+    expect(cells.map((c) => c.textContent?.trim())).toEqual(["Claro", "Escuro"]);
+    expect(cells[1].getAttribute("aria-pressed")).toBe("true");
+    await click(cells[0]);
     expect(document.documentElement.classList.contains("dark")).toBe(false);
     expect(localStorage.getItem("theme")).toBe("light");
     await act(async () => { themed.unmount(); });
