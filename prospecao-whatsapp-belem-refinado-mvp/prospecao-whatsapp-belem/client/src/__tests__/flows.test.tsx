@@ -617,6 +617,17 @@ describe("início, card e movimento (redesign)", () => {
     expect(q(".px-search-go")?.textContent).toMatch(/Hunt/i);
     expect(qa(".px-hero-steps li").map((li) => li.textContent)).toEqual(["discover", "find", "understand", "decide", "reach out"]);
     expect(q(".px-empty h3")?.textContent).toContain("Nenhuma busca ainda");
+    // sem caça rodada, nada na navegação finge atividade
+    expect(q(".side-nav .nav-dot")).toBeNull();
+  });
+  it("a navegação agrupa por fase do produto e não finge estar ao vivo", () => {
+    expect(qa(".px-nav-group .sidebar-section-label").map((el) => el.textContent)).toEqual(["Discover", "Leads", "Intelligence", "Outreach"]);
+    expect(qa(".px-nav-group")[0].querySelectorAll(".nav-item")).toHaveLength(2);
+    expect(qa(".side-nav .nav-item").map((el) => el.textContent?.trim()).slice(0, 2)).toEqual(["Início", "Caçar Leads"]);
+    expect(q(".px-nav-rail")).toBeTruthy();
+    // o antigo "Belém, PA" com ponto pulsando prometia feed ao vivo que não existe
+    expect(q(".live-dot")).toBeNull();
+    expect(q(".top-actions")?.textContent).toContain("pipeline local");
   });
   it("caçar pelo Início mostra melhor match, depois as outras, e lembra a busca", async () => {
     stubRoutes({ "/api/hunt-leads": { results: [HUNT_RESULT, { ...HUNT_RESULT, id: "h2", name: "Outra Exemplo" }] } });
@@ -632,6 +643,8 @@ describe("início, card e movimento (redesign)", () => {
     expect(stored).toHaveLength(157);
     expect(stored.some((l: { name?: string }) => l.name === "Refrigeração Exemplo")).toBe(false);
     // a memória guarda o que o motor de fato procurou (segmento + cidade), não o texto cru
+    // o indicador da sidebar só acende porque existe caça não importada — estado real
+    expect(q(".side-nav .nav-dot")).toBeTruthy();
     const memory = JSON.parse(localStorage.getItem("prospecta-searches-v1") || "[]");
     expect(memory[0].query).toContain("refrigeração");
     expect(memory[0].found).toBe(2);

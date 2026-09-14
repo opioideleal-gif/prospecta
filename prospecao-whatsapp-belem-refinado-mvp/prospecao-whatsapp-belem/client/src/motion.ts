@@ -130,6 +130,34 @@ export function pointerDepth(el: HTMLElement, opts: { tilt?: number; shift?: num
 }
 
 /**
+ * Rail de seleção da navegação: uma régua que mede o item ativo e desliza até ele.
+ * Vive fora do React state — a posição é lida do DOM quando o ativo muda, então trocar de aba
+ * não re-renderiza a lista inteira nem depende de índice calculado na mão.
+ */
+export function navIndicator(nav: HTMLElement | null, selector = ".nav-item.active") {
+  if (!nav || !can()) return () => {};
+  const rail = nav.querySelector<HTMLElement>(".px-nav-rail");
+  if (!rail) return () => {};
+  const place = (animate: boolean) => {
+    const active = nav.querySelector<HTMLElement>(selector);
+    if (!active) { rail.style.opacity = "0"; return; }
+    rail.style.opacity = "1";
+    const vars = { y: active.offsetTop, height: active.offsetHeight };
+    if (!animate || reducedMotion()) gsap.set(rail, vars);
+    else gsap.to(rail, { ...vars, duration: 0.44, ease: "power3.out" });
+  };
+  place(false);
+  const onResize = () => place(false);
+  window.addEventListener("resize", onResize);
+  // fonte do Space Grotesk chega depois do primeiro paint: sem isso o rail nasce medindo errado
+  const raf = requestAnimationFrame(() => place(false));
+  return () => {
+    cancelAnimationFrame(raf);
+    window.removeEventListener("resize", onResize);
+  };
+}
+
+/**
  * FLIP de superfície: o card vira a ficha. Mede o card (First), deixa o painel no lugar final
  * para medir (Last), inverte com top/left/width/height e toca (Play). Anima o retângulo, não o
  * texto escalado — é a diferença entre "o card se transformou" e "deu zoom estourado".
