@@ -618,7 +618,12 @@ describe("início, card e movimento (redesign)", () => {
     expect(qa(".px-hero-steps li").map((li) => li.getAttribute("data-step"))).toEqual(["discover", "find", "understand", "decide", "reach out"]);
     // o trilho mostra estado real: sem busca digitada, "discover" é o passo atual e o resto espera
     expect(qa(".px-hero-steps li").map((li) => li.getAttribute("data-state"))).toEqual(["now", "idle", "idle", "idle", "idle"]);
-    expect(qa(".px-hero-steps li p").every((p) => (p.textContent || "").length > 20)).toBe(true);
+    // cada passo tem uma frase de ação, não um rótulo solto. A cópia encolheu POR REQUISITO (a
+    // interface explica o produto pela hierarquia, não por parágrafo dentro da etapa) — então a
+    // asserção deixa de medir comprimento e passa a medir o conteúdo exato dos cinco passos.
+    expect(qa(".px-hero-steps li p").map((el) => (el.textContent || "").trim())).toEqual([
+      "Defina o alvo.", "Encontre sinais.", "Leia o contexto.", "Priorize oportunidades.", "Comece a conversa.",
+    ]);
     expect(q(".px-empty h3")?.textContent).toContain("Nenhuma busca ainda");
     // sem caça rodada, nada na navegação finge atividade
     expect(q(".side-nav .nav-dot")).toBeNull();

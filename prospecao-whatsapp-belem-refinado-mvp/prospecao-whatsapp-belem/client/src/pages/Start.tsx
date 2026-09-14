@@ -16,11 +16,11 @@ type Insights = { total: number; researched: number; withOpportunity: number; st
 const SEEDS = ["restaurantes em Belém", "lojas de roupa", "clínicas odontológicas"];
 
 const STEPS = [
-  { key: "discover", now: "você diz o que procura: segmento, bairro, cidade" },
-  { key: "find", now: "a busca varre fonte pública e traz empresas de Belém" },
-  { key: "understand", now: "lemos a página da empresa e separamos fato de leitura" },
-  { key: "decide", now: "score com motivos; você escolhe o que entra na carteira" },
-  { key: "reach out", now: "primeira mensagem escrita para aquela empresa, sua antes de enviar" },
+  { key: "discover", now: "Defina o alvo." },
+  { key: "find", now: "Encontre sinais." },
+  { key: "understand", now: "Leia o contexto." },
+  { key: "decide", now: "Priorize oportunidades." },
+  { key: "reach out", now: "Comece a conversa." },
 ] as const;
 type StepState = "idle" | "next" | "now" | "done";
 function stateFor(key: (typeof STEPS)[number]["key"], query: string, hunting: boolean, found: number, insights: Insights): StepState {

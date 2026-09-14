@@ -18,10 +18,18 @@
   --px-surface-3: #ffffff;
   --px-edge: #e3e9f1;
   --px-edge-strong: #c9d4e1;
-  /* quatro degraus de texto, todos acima de 4,5:1 — "apagado" não é hierarquia, é defeito */
-  --px-text: #101a2b;
-  --px-text-2: #48586f;
-  --px-text-3: #5b6a80;   /* 4,68 no canvas, 5,35 no card: o terceiro nível continua terceiro, só que legível */
+  /* Cinco degraus SEMÂNTICOS, medidos sobre o pior fundo do tema (o canvas). O defeito anterior não
+     era falta de contraste, era degrau vizinho colado: secondary/tertiary/disabled moravam no mesmo
+     cinza. Cada salto abaixo é de 1,35× ou mais, o nível 4 (rótulo auxiliar) ainda passa de 4,5:1,
+     e o nível 5 existe SÓ para controle desativado — nunca para texto informativo. */
+  --px-text-primary: #0a1220;    /* 15,9 canvas · 18,8 card */
+  --px-text-secondary: #2f3d54;  /*  9,3 · 11,0 */
+  --px-text-tertiary: #4a5870;   /*  6,1 ·  7,2 */
+  --px-text-muted: #5c6a81;      /*  4,6 ·  5,3 — rótulo auxiliar */
+  --px-text-disabled: #8b97a8;   /*  2,5 — somente :disabled */
+  --px-text: var(--px-text-primary);
+  --px-text-2: var(--px-text-secondary);
+  --px-text-3: var(--px-text-muted);
   --px-accent: #527d0d;
   --px-accent-ink: #ffffff;
   --px-ok: #1f7d55;
@@ -43,24 +51,24 @@
   --px-radius-xs: 8px;
   --px-radius-sm: 12px;
   /* escala tipográfica por papel — cada tamanho responde "que tipo de informação é esta?" */
-  --px-fs-display: clamp(40px, 5.2vw, 74px);
-  --px-fs-h1: clamp(26px, 2.8vw, 38px);
-  --px-fs-h2: clamp(21px, 2.1vw, 28px);
-  --px-fs-h3: 16px;
-  --px-fs-body: 14px;
-  --px-fs-meta: 11.5px;
-  --px-fs-label: 10.5px;
+  --px-fs-display: clamp(44px, 5vw, 56px);
+  --px-fs-h1: clamp(28px, 3vw, 40px);
+  --px-fs-h2: clamp(22px, 2.2vw, 28px);
+  --px-fs-h3: 18px;
+  --px-fs-body: 15px;
+  --px-fs-meta: 12px;
+  --px-fs-label: 11px;
   /* unico tamanho fora da escala tipografia: a barra tem 250px e o item precisa caber com o
      badge ao lado - 14px ali nao cabe, 11,5px e o 'apagado' que combatemos */
-  --px-fs-nav: 13.5px;
+  --px-fs-nav: 14px;
   /* A barra de navegação tem plano e texto próprios em CADA tema: no claro é um cinza frio
      ligeiramente mais escuro que a tela; no escuro (html.dark) é quase preto com tinta clara.
      Endurecer isso em #0a1221 + azul-claro funcionava só no escuro — no claro virou o mesmo
      "texto apagado" que a fase inteira veio combater. */
   --px-side-bg: #eef3f9;
-  --px-side-text: #33445c;
-  --px-side-strong: #0e1826;
-  --px-side-meta: #5c6d84;
+  --px-side-text: #1f2c44;    /* 12,5:1 — o item de menu é leitura, não legenda */
+  --px-side-strong: #060d18;  /* 17,5:1 — o ativo e o que é métrica */
+  --px-side-meta: #46536a;    /*  7,0:1 — WORKSPACE/ATALHOS podem ser pequenos, não apagados */
   --px-side-hover: rgba(16,26,43,.055);
   --px-side-edge: rgba(16,26,43,.12);
   --px-side-active: #e7eddd;
@@ -68,12 +76,16 @@
   --px-fs-input: clamp(18px, 1.9vw, 25px);
   --px-fs-num: 22px;
   --px-fs-score: clamp(34px, 3.8vw, 54px);
-  /* pesos da fonte variável: o meio-termo (430/550/620) é o que faz a interface parecer
+  /* pesos da fonte variável: o conjunto aprovado é 400/500/600/700 (+780 nos números); o eixo
+     variável existe para ajustar detalhe, não para inventar degrau novo — foi assim que 430/550/620
+     viraram regra, e regra que ninguém lê é regra que ninguém mantém. */
+  /* (a linha abaixo era só a justificativa antiga; os tokens estão logo em seguida) */
      desenhada em vez de negritada no marcao */
-  --px-w-text: 430;
-  --px-w-medium: 550;
-  --px-w-strong: 620;
-  --px-w-title: 680;
+  --px-w-text: 400;
+  --px-w-medium: 500;
+  --px-w-strong: 600;
+  --px-w-title: 700
+  --px-w-score: 780;   /* número grande: 700–800, como especificado */;
   /* ritmo vertical: 8 passos derivados de 4 */
   --px-s1: 4px; --px-s2: 8px; --px-s3: 12px; --px-s4: 16px;
   --px-s5: 24px; --px-s6: 32px; --px-s7: 48px; --px-s8: 64px;
@@ -102,9 +114,14 @@ html.dark {
   --px-surface-3: #1a2736;
   --px-edge: rgba(255, 255, 255, .075);
   --px-edge-strong: rgba(255, 255, 255, .15);
-  --px-text: #eef3fa;
-  --px-text-2: #a3b2c6;
-  --px-text-3: #7d8ca2;
+  --px-text-primary: #f4f7fa;    /* 18,7 canvas · 17,5 card */
+  --px-text-secondary: #c6cfdb;  /* 12,7 · 12,0 — era #a3b2c6, colado no tertiary */
+  --px-text-tertiary: #94a1b4;   /*  7,7 ·  7,2 */
+  --px-text-muted: #7a8899;      /*  5,6 ·  5,2 */
+  --px-text-disabled: #54606f;   /*  3,1 — somente :disabled */
+  --px-text: var(--px-text-primary);
+  --px-text-2: var(--px-text-secondary);
+  --px-text-3: var(--px-text-muted);
   --px-accent: #cbf057;
   --px-accent-ink: #0a1204;
   --px-ok: #63d9a0;
@@ -119,9 +136,9 @@ html.dark {
   --px-hl: rgba(255, 255, 255, .055);
   --px-inner-light: rgba(255, 255, 255, .05);
   --px-side-bg: #060a10;
-  --px-side-text: #c6d3e4;
-  --px-side-strong: #eaf1fa;
-  --px-side-meta: #93a6bf;
+  --px-side-text: #cfd9e6;    /* 13,9:1 */
+  --px-side-strong: #f4f7fa;  /* 18,5:1 */
+  --px-side-meta: #93a3b8;    /*  7,7:1 */
   --px-side-hover: rgba(255,255,255,.06);
   --px-side-edge: rgba(255,255,255,.09);
   --px-side-active: #263127;
@@ -240,7 +257,11 @@ html.dark .whatsapp-button { background: #1b2632;}
 html.dark .whatsapp-button:hover { background: #223040;}
 .outline-button { background: transparent; color: var(--px-text-2); border: 1px solid var(--px-edge); border-radius: var(--px-radius-sm); transition: color var(--px-fast), border-color var(--px-fast), background var(--px-fast), transform var(--px-fast);}
 .outline-button:hover { color: var(--px-text); border-color: var(--px-edge-strong); background: var(--px-hl); transform: translateY(-1px);}
-.outline-button:disabled, .dark-action:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none;}
+/* texto desativado é tinta, não véu: o quinto degrau já diz "não clique aqui" sem apagar a frase
+   inteira atrás de opacity. Botão PREENCHIDO continua escurecendo por completo — ali o véu é do
+   controle, não do texto. */
+.outline-button:disabled { color: var(--px-text-disabled); border-color: var(--px-edge); cursor: not-allowed; transform: none; box-shadow: none;}
+.dark-action:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none;}
 :where(button, a, input, select):focus-visible { outline: 2px solid color-mix(in srgb, var(--px-accent) 70%, transparent); outline-offset: 2px; border-radius: var(--px-radius-xs);}
 
 /* ── 5. navegação ──────────────────────────────────────────────────────── */
@@ -259,14 +280,15 @@ html.dark .whatsapp-button:hover { background: #223040;}
 .px-hero h1 { margin: 0; font: 600 var(--px-fs-display)/1.01 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.04em; color: var(--px-text); max-width: 19ch;}
 .px-hero h1 em { font-style: normal; color: var(--px-accent);}
 .px-hero > p { margin: 0; max-width: 54ch; font-size: var(--px-fs-h3); line-height: 1.66;}
-.px-hero-steps { display: flex; flex-wrap: wrap; list-style: none; margin: var(--px-s1) 0 0; padding: 0;  gap: var(--px-s2);}
-.px-hero-steps li { font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--px-text-3); border: 1px solid var(--px-edge); border-radius: var(--px-radius-pill); background: var(--px-hl);}
-.px-hero-steps li + li::before { margin-right: var(--px-s1);}
+/* A pill do li (borda + raio 99px + fundo lavado) sobreviveu à troca do modo chip pelo trilho de
+   cinco nós: esticada pela grid, cada li virava um estádio cinza e a frase quebrava uma palavra por
+   linha. Some daqui em vez de continuar sendo neutralizada por um reset lá embaixo — regra morta que
+   precisa de reset é a definição de ruído. */
 
 /* bloco de busca: é o coração, então é o maior retângulo da tela */
 .px-search { position: relative; border-radius: var(--px-radius-lg); padding: 1px; background: linear-gradient(150deg, var(--px-edge-strong), transparent 42%, color-mix(in srgb, var(--px-accent) 40%, transparent)); box-shadow: var(--px-shadow-2);}
 .px-search-inner { display: grid; border-radius: calc(var(--px-radius-lg) - 1px); background: var(--px-surface-2); transition: background var(--px-mid);}
-.px-search label { display: block; font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; text-transform: uppercase;}
+.px-search label { display: block; font: var(--px-w-strong) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; text-transform: uppercase;}
 .px-search input { width: 100%; border: 0; background: transparent; color: var(--px-text); font: 500 var(--px-fs-input)/1.35 "Geist Variable", "Inter", system-ui, sans-serif; padding: 0;}
 .px-search input::placeholder { font-weight: 400;}
 .px-search input:focus-visible { outline: 0;}
@@ -277,7 +299,7 @@ html.dark .whatsapp-button:hover { background: #223040;}
 .px-search-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--px-s2) var(--px-s4); padding: var(--px-s3) var(--px-s4) var(--px-s3); background: var(--px-surface-1); border-top: 1px solid var(--px-edge); font-size: var(--px-fs-meta); color: var(--px-text-2);}
 .px-search-foot b { color: var(--px-text); font-weight: 600;}
 .px-scan { position: absolute; left: 18px; right: 18px; bottom: -1px; height: 2px; border-radius: var(--px-radius-pill); background: var(--px-accent); transform: scaleX(0); transform-origin: left center; opacity: 0; box-shadow: 0 0 12px color-mix(in srgb, var(--px-accent) 70%, transparent);}
-.px-search-state { display: inline-flex; align-items: center; gap: var(--px-s2); font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--px-text-2);}
+.px-search-state { display: inline-flex; align-items: center; gap: var(--px-s2); font: var(--px-w-strong) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--px-text-2);}
 .px-search-state.is-live { color: var(--px-accent);}
 .px-search-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor;}
 @keyframes px-breathe { 0%, 100% { opacity: .35; transform: scale(.86);} 50% { opacity: 1; transform: scale(1);}}
@@ -307,7 +329,7 @@ html.dark .whatsapp-button:hover { background: #223040;}
 .lead-card:hover::before { opacity: 1;}
 .lead-card:hover { border-color: var(--px-edge-strong); box-shadow: var(--px-shadow-2); transform: translate3d(0, -2px, 0) rotateX(var(--px-tx, 0deg)) rotateY(var(--px-ty, 0deg));}
 .px-card-score { place-content: center; padding-right: var(--px-s4);}
-.lead-card .px-card-score-num { font: 620 var(--px-fs-h1)/.92 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.05em; color: var(--px-text);}
+.lead-card .px-card-score-num { font: var(--px-w-score) var(--px-fs-h1)/.92 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.05em; color: var(--px-text);}
 .px-card-score-label { font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: var(--px-tracking); text-transform: uppercase;}
 .px-card-bar { height: 3px; border-radius: var(--px-radius-pill); background: color-mix(in srgb, var(--px-text-3) 26%, transparent); overflow: hidden;}
 .px-card-bar i { display: block; height: 100%; border-radius: inherit; background: var(--px-accent); box-shadow: 0 0 10px color-mix(in srgb, var(--px-accent) 55%, transparent);}
@@ -336,7 +358,7 @@ html.dark .px-card-tag { color: #0b1206;}
 /* só o respiro é do card principal; a borda de destaque é a linha de superfície (abaixo) */
 .lead-card--primary { padding: var(--px-s5);}
 .lead-card--primary .px-card-score-num { font-size: calc(var(--px-fs-h1) * 1.14);}
-.lead-card--utility { padding: var(--px-s3) var(--px-s4); opacity: .88;}
+.lead-card--utility { padding: var(--px-s3) var(--px-s4); background: var(--px-surface-1);}
 .lead-card--utility .px-card-score-num { font-size: var(--px-fs-num);}
 .lead-card--utility .px-signals { margin-top: var(--px-s2);}
 .lead-card--utility:hover { opacity: 1;}
@@ -589,7 +611,7 @@ html:not(.dark) .px-score-case { background: color-mix(in srgb, var(--px-surface
    done) vem da busca digitada, do resultado que voltou e do que já foi pesquisado. */
 .px-hero-steps { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; list-style: none; margin: var(--px-s5) 0 0; padding: 0; counter-reset: none;}
 .px-hero-steps::before { content: ""; position: absolute; left: 10px; right: 10px; top: 11px; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 42%, transparent), var(--px-edge) 42%, var(--px-edge));}
-.px-hero-steps li { position: relative; display: grid; gap: var(--px-s2); justify-items: start;  padding: 0 var(--px-s3);}
+.px-hero-steps li { position: relative; display: grid; gap: var(--px-s2); justify-items: start;}
 .px-hero-steps b { position: relative; z-index: 1; border-radius: 50%; display: grid; place-items: center; background: var(--px-surface-2); color: var(--px-text-3); border: 1px solid var(--px-edge-strong); transition: color var(--px-mid) var(--px-ease), border-color var(--px-mid), box-shadow var(--px-mid), background var(--px-mid);}
 .px-hero-steps span { font: 600 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; text-transform: uppercase; transition: color var(--px-mid);}
 .px-hero-steps p { margin: 0; line-height: 1.45; transition: color var(--px-mid);}
@@ -617,19 +639,17 @@ html.dark .px-hero-steps li[data-state="now"] b { color: #0b1206;}
 /* ── 20. sidebar legível: item de navegação é texto, não legenda ───────────────
    Os itens estavam em 12,5px com cinza de metadata — por isso pareciam desativados. Agora:
    corpo de texto (13,5px / 550) em cor de leitura, e o que é métrica vira badge mono discreto. */
-.px-side-nav .nav-item { font-size: var(--px-fs-nav); font-weight: var(--px-w-medium); letter-spacing: -.011em; padding: 10px 12px; gap: 11px; color: var(--px-side-text);}
-.px-side-nav .nav-item:hover { color: #f1f6fc;}
-.px-side-nav .nav-item.active { color: #ffffff; font-weight: var(--px-w-strong); background: linear-gradient(90deg, color-mix(in srgb, var(--lime) 15%, transparent), color-mix(in srgb, var(--lime) 4%, transparent) 62%, transparent);}
-html.dark .px-side-nav .nav-item { color: #c9d6e7;}
-html.dark .px-side-nav .nav-item.active { color: #f4f8ff; background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 17%, transparent), color-mix(in srgb, var(--px-accent) 5%, transparent) 62%, transparent);}
-.px-side-nav .nav-item svg { opacity: .82;}
+.px-side-nav .nav-item { font-size: var(--px-fs-nav); font-weight: var(--px-w-medium); letter-spacing: -.006em; padding: 12px 14px; gap: 12px; color: var(--px-side-text);}
+.px-side-nav .nav-item:hover { color: var(--px-side-strong);}
+.px-side-nav .nav-item.active { color: var(--px-side-strong); font-weight: var(--px-w-title); background: linear-gradient(90deg, color-mix(in srgb, var(--lime) 15%, transparent), color-mix(in srgb, var(--lime) 4%, transparent) 62%, transparent);}
+html.dark .px-side-nav .nav-item.active { color: var(--px-side-strong); background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 17%, transparent), color-mix(in srgb, var(--px-accent) 5%, transparent) 62%, transparent);}
+.px-side-nav .nav-item svg { opacity: .72;}
 .px-side-nav .nav-item.active svg { opacity: 1; color: var(--lime);}
 html.dark .px-side-nav .nav-item.active svg { color: var(--px-accent);}
-.px-side-nav .nav-count { font: 560 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .06em; color: #9fb0c7; border-color: rgba(255, 255, 255, .12); padding: 3px 6px;}
+.px-side-nav .nav-count { font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; text-align: center; min-width: 3ch; letter-spacing: .02em; padding: 4px 7px;}
 .px-side-nav .nav-count.lime-count { color: #d6ef8f; border-color: color-mix(in srgb, var(--lime) 34%, transparent);}
 html.dark .px-side-nav .nav-count.lime-count { color: var(--px-accent); border-color: color-mix(in srgb, var(--px-accent) 34%, transparent);}
-.px-side-nav .sidebar-section-label { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .16em; color: var(--px-side-meta);}
-html.dark .px-side-nav .sidebar-section-label { color: #92a5be;}
+.px-side-nav .sidebar-section-label { font: var(--px-w-strong) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; color: var(--px-side-meta);}
 .px-side-nav .shortcut-list button { font-size: var(--px-fs-meta); font-weight: var(--px-w-medium); color: var(--px-side-text); padding: 8px 12px;}
 .px-side-nav .shortcut-list button:hover { color: #eff5fc;}
 .mini-profile strong { font-size: var(--px-fs-meta); font-weight: var(--px-w-strong); color: var(--px-side-strong);}
@@ -638,17 +658,17 @@ html.dark .px-side-nav .sidebar-section-label { color: #92a5be;}
 
 /* ── 21. topbar: contexto, tema e base — cada um no seu tamanho ────────────── */
 .breadcrumbs { gap: var(--px-s2);}
-.px-crumb-root { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--px-text-3);}
+.px-crumb-root { font: var(--px-w-strong) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; color: var(--px-text-tertiary);}
 .breadcrumbs .slash { color: var(--px-edge-strong);}
-.breadcrumbs strong { font: var(--px-w-strong) 13px/1 "Geist Variable", sans-serif; letter-spacing: -.008em; color: var(--px-text); text-transform: uppercase;}
-.px-data-state { font: 560 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text-2); border-color: var(--px-edge); background: var(--px-surface-1); padding: 7px 11px;  display: inline-flex;}
+.breadcrumbs strong { font: var(--px-w-title) var(--px-fs-nav)/1 "Geist Variable", sans-serif; letter-spacing: -.006em; color: var(--px-text); text-transform: uppercase;}
+.px-data-state { font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text-2); border-color: var(--px-edge); background: var(--px-surface-1); padding: 7px 11px;  display: inline-flex;}
 .px-data-state svg { color: var(--px-ok);}
 /* pílula de tema: a célula acesa é o tema em uso; a outra é o que o clique faz */
 .px-theme { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--px-radius-pill); background: var(--px-surface-1); box-shadow: inset 0 0 0 1px var(--px-edge);}
-.px-theme-cell { display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; color: var(--px-text-3); border-radius: var(--px-radius-pill); cursor: pointer; font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Variable", sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: color var(--px-fast), background var(--px-fast), transform var(--px-fast) var(--px-ease);  padding: 5px 10px;}
+.px-theme-cell { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: transparent; color: var(--px-text-tertiary); font-weight: var(--px-w-medium); border-radius: var(--px-radius-pill); cursor: pointer; font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Variable", sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: color var(--px-fast), background var(--px-fast), transform var(--px-fast) var(--px-ease);  padding: 5px 10px;}
 .px-theme-cell:hover { color: var(--px-text); background: var(--px-hl);}
 .px-theme-cell:active { transform: scale(.97);}
-.px-theme-cell[aria-pressed="true"] { color: var(--px-text); background: var(--px-surface-2); box-shadow: var(--px-shadow-1);}
+.px-theme-cell[aria-pressed="true"] { color: var(--px-text); font-weight: var(--px-w-title); border-color: var(--px-edge-strong); background: var(--px-surface-2); box-shadow: var(--px-shadow-1);}
 .px-theme-cell[aria-pressed="true"] svg { color: var(--px-accent);}
 html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, var(--px-accent) 13%, var(--px-surface-2));}
 @media (max-width: 700px) { .px-theme-cell span { display: none;} .px-theme-cell { padding: 6px 9px;}}
@@ -666,9 +686,9 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-hero h1 { font-weight: var(--px-w-title);}
 
 /* o trilho de passos vira leitura continua: 01 DISCOVER → 02 FIND → ... */
-.px-hero-steps b { width: 24px; height: 24px; font-size: var(--px-fs-meta); letter-spacing: 0;}
-.px-hero-steps span { font-weight: 600;}
-.px-hero-steps p { color: var(--px-text-2); font-size: var(--px-fs-meta);}
+/* o tamanho do número, o peso do rótulo e a cor da frase passaram a viver na seção do trilho; aqui
+   ficaria uma segunda opinião sobre o mesmo pixel, que é como um ajuste para de funcionar */
+.px-hero-steps p { color: var(--px-text-tertiary);}
 .px-hero-steps li[data-state="now"] p { color: var(--px-text);}
 .px-hero-steps li + li::before { position: absolute; left: -5px; top: 3px; margin: 0; color: var(--px-text-3); font: 400 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace;}
 @media (max-width: 1180px) { .px-hero-steps li + li::before { display: none;}}
@@ -676,7 +696,7 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 /* a busca é o objeto mais importante da tela — altura, presença, rótulo legível, CTA largo */
 .px-search { transition: box-shadow var(--px-mid), transform var(--px-mid) var(--px-ease);}
 .px-search-inner { padding: var(--px-s5) var(--px-s5) var(--px-s5) var(--px-s6); gap: var(--px-s4); min-height: 96px; align-items: center;  grid-template-columns: minmax(0, 1fr) auto;}
-.px-search label { color: var(--px-text-2); font-weight: 600; font-size: var(--px-fs-meta); letter-spacing: .11em; margin-bottom: var(--px-s3);}
+.px-search label { color: var(--px-text-tertiary); font-weight: var(--px-w-title); letter-spacing: .14em; margin-bottom: var(--px-s3);}
 .px-search input { font-size: clamp(20px, 2vw, 27px); letter-spacing: -.028em; font-weight: 500;}
 .px-search input::placeholder { color: var(--px-text-3); opacity: .8;}
 .px-search.is-focus { box-shadow: var(--px-shadow-3), var(--px-glow), 0 0 0 1px color-mix(in srgb, var(--px-accent) 34%, transparent); transform: translateY(-2px);}
@@ -684,16 +704,17 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-search.is-focus input { color: var(--px-text);}
 .px-search-go { padding: var(--px-s4) var(--px-s5); border-radius: var(--px-radius-xs); font-weight: var(--px-w-strong); gap: var(--px-s3);}
 .px-search-go:hover { transform: translateY(-2px);}
-/* quando a busca assume, o resto recua: menos ruído no momento de digitar */
-.px-hero-steps, .px-rail { transition: opacity var(--px-slow) var(--px-ease);}
-.px-start:has(.px-search.is-focus) :is(.px-hero-steps, .px-rail) { opacity: .55;}
+/* quando a busca assume, o que recua é o FIO decorativo do trilho. Texto informativo nunca entra em
+   opacity:.55 — opacidade alta sobre texto pequeno é justamente o "apagado" que não é hierarquia. */
+.px-hero-steps::before { transition: opacity var(--px-slow) var(--px-ease);}
+.px-start:has(.px-search.is-focus) .px-hero-steps::before { opacity: .3;}
 
 /* rail lateral: estado, não painel de métricas */
 .px-rail { display: grid; gap: var(--px-s5); align-content: start;}
 .px-rail-card { display: grid; gap: var(--px-s3); padding: var(--px-s5); border-radius: var(--px-radius); background: var(--px-surface-1); border-top: 1px solid var(--px-edge-strong); box-shadow: var(--px-shadow-1);}
-.px-rail-kicker { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--px-text-2);}
+.px-rail-kicker { font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; color: var(--px-text-tertiary);}
 .px-rail-lede, .px-rail-note { margin: 0; font-size: var(--px-fs-meta); line-height: 1.5; color: var(--px-text-2);}
-.px-rail-sub { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--px-text-3);}
+.px-rail-sub { font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .15em; text-transform: uppercase; color: var(--px-text-tertiary);}
 .px-rail-rows { display: grid; gap: 0; margin: 0; padding: 0; list-style: none;}
 .px-rail-rows li + li { border-top: 1px solid var(--px-edge);}
 .px-rail-rows button { width: 100%; display: grid; gap: var(--px-s1); text-align: left; padding: var(--px-s3) 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; transition: color var(--px-fast), padding-left var(--px-fast) var(--px-ease);}
@@ -703,7 +724,7 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-rail-rows small { font-size: var(--px-fs-meta); color: var(--px-text-2);}
 .px-rail-rows--data li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--px-s3); padding: var(--px-s2) 0;}
 .px-rail-rows--data span { font: 600 var(--px-fs-label)/1.2 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--px-text-2);}
-.px-rail-rows--data b { font: 620 var(--px-fs-h3)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text); font-variant-numeric: tabular-nums;}
+.px-rail-rows--data b { font: var(--px-w-score) var(--px-fs-h3)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text); font-variant-numeric: tabular-nums;}
 .px-seeds { display: flex; flex-wrap: wrap; gap: var(--px-s2); margin: 0; padding: 0; list-style: none;}
 .px-seeds button { padding: 7px var(--px-s3); border-radius: var(--px-radius-pill); border: 1px solid var(--px-edge-strong); background: var(--px-surface-2); color: var(--px-text); font: 400 var(--px-fs-meta)/1 "Geist Variable", "Inter", system-ui, sans-serif; cursor: pointer; transition: border-color var(--px-fast), color var(--px-fast), transform var(--px-fast) var(--px-ease);}
 .px-seeds button:hover { border-color: color-mix(in srgb, var(--px-accent) 60%, transparent); color: var(--px-accent); transform: translateY(-1px);}
@@ -731,7 +752,7 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr) clamp(132px, 13vw, 176px); grid-template-areas: "main score" "actions actions";}
 .px-card-score { display: grid; justify-items: end; align-content: start; border-right: 0;  border-left: 1px solid var(--px-edge); gap: var(--px-s2); padding: 0 0 0 var(--px-s4); text-align: right;}
 .px-card-score-label { align-self: end; color: var(--px-text-2);}
-.px-card-score-num { color: var(--px-text); font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: 620; letter-spacing: -.05em;  font-size: var(--px-fs-score);}
+.px-card-score-num { color: var(--px-text); font-variant-numeric: tabular-nums; font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: var(--px-w-score); letter-spacing: -.05em;  font-size: var(--px-fs-score);}
 .lead-card--primary .px-card-score-num { color: var(--px-accent);}
 .lead-card--primary .px-card-score { padding-left: var(--px-s5);}
 .px-card-score > small { color: var(--px-text); font-weight: var(--px-w-medium);}
@@ -752,7 +773,7 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
    adicionadas / vazio), então ele nunca promete algo que já aconteceu. */
 .px-step-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--px-s4); margin: var(--px-s6) 0 var(--px-s3); padding-bottom: var(--px-s2); border-bottom: 1px solid var(--px-edge-strong);}
 .px-step-kicker { display: inline-flex; align-items: center; gap: var(--px-s3); font: 600 var(--px-fs-h3)/1.1 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--px-text);}
-.px-step-kicker b { font: 620 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-accent); letter-spacing: .06em;}
+.px-step-kicker b { font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-accent); letter-spacing: .06em;}
 .px-step-hint { font: 500 var(--px-fs-meta)/1.2 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--px-text-2);}
 .px-next-step { display: inline-flex; align-items: center; gap: var(--px-s2); margin: var(--px-s3) 0 0; width: fit-content; padding: var(--px-s2) var(--px-s3) var(--px-s2) var(--px-s2); border-radius: var(--px-radius-pill); background: color-mix(in srgb, var(--px-accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--px-accent) 32%, transparent); font: 600 var(--px-fs-label)/1.1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--px-text);}
 .px-next-step svg { color: var(--px-accent);}
@@ -787,7 +808,8 @@ html.px-theme-swap :is(body, .app-shell, .sidebar, .main-content, .topbar, .lead
 .sidebar .nav-item, .sidebar .shortcut-list button { color: var(--px-side-text);}
 .sidebar .nav-item:hover, .sidebar .shortcut-list button:hover { color: var(--px-side-strong); background: var(--px-side-hover);}
 .sidebar .nav-item.active { color: var(--px-side-strong); background: var(--px-side-active); box-shadow: none;}
-.sidebar .nav-count { color: var(--px-side-text); background: var(--px-side-hover);}
+.sidebar .nav-count { color: var(--px-side-strong); background: var(--px-surface-2); border: 1px solid var(--px-side-edge);
+  font-variant-numeric: tabular-nums; border-radius: var(--px-radius-xs);}
 .sidebar .sidebar-bottom { border-top-color: var(--px-side-edge);}
 .sidebar .mini-profile strong { color: var(--px-side-strong);}
 .sidebar .mini-profile span { color: var(--px-side-meta);}
@@ -808,11 +830,11 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
 .px-hero-steps li { border: 0; border-radius: 0; background: none; padding: 0 var(--px-s4); font: inherit; letter-spacing: 0; text-transform: none; color: var(--px-text-2); align-content: start;}
 .px-hero-steps li + li { border-left: 1px solid var(--px-edge);}
 .px-hero-steps li + li::before { content: none;}
-.px-hero-steps p { font: 400 var(--px-fs-meta)/1.5 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.004em; text-transform: none; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden;  -webkit-line-clamp: 3; max-width: 21ch;}
+.px-hero-steps p { font: var(--px-w-text) var(--px-fs-meta)/1.45 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.004em; text-transform: none; max-width: 22ch;}
 .px-hero-steps b { width: 22px; height: 22px; font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: 0;}
-.px-hero-steps span { font-size: var(--px-fs-label); letter-spacing: .13em; color: var(--px-text-2);}
+.px-hero-steps span { font-size: var(--px-fs-label); font-weight: var(--px-w-title); letter-spacing: .14em; color: var(--px-text-tertiary);}
 .px-hero-steps li[data-state="now"] span { color: var(--px-text);}
-.px-hero-steps li[data-state="idle"] p { color: var(--px-text-3);}
+.px-hero-steps li[data-state="idle"] p { color: var(--px-text-muted);}
 .px-search { background: linear-gradient(150deg, var(--px-edge-strong), color-mix(in srgb, var(--px-accent) 38%, var(--px-edge-strong)));}
 .px-search-state.is-error { color: var(--px-bad);}
 .px-search-state.is-error i { animation: none; background: var(--px-bad);}
@@ -837,7 +859,7 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
    Aqui os dois voltam para a escala — mesma especificidade, arquivo mais tarde, jogo limpo. */
 .lead-card .lead-title-row h3 { font-size: var(--px-fs-h3); font-weight: var(--px-w-title); letter-spacing: -.018em; color: var(--px-text);}
 .lead-modal .modal-head h2, .lead-modal h2 { font: var(--px-w-title) var(--px-fs-h2)/1.14 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.03em; color: var(--px-text);}
-.hunt-card .hunt-score { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: var(--px-fs-num); font-weight: 620; letter-spacing: -.03em; color: var(--px-text);}
+.hunt-card .hunt-score { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: var(--px-fs-num); font-weight: var(--px-w-score); letter-spacing: -.03em; color: var(--px-text);}
 
 /* ── 30. cards que não estouram, e o trilho de passos com ritmo ─────────────────────
    min-width:0 nos filhos é o que impede um 1fr de ser esticado pela URL de um link: sem isso o
@@ -850,9 +872,6 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
 :is(.lead-card, .hunt-card, .queue-row, .opportunity-row, .next-card, .today-next, .px-row, .px-result, .rp-panel) > * { min-width: 0; }
 :is(.lead-card, .hunt-card, .opportunity-row, .rp-panel, .px-row) a { overflow-wrap: anywhere; }
 .evidence-row a { color: var(--px-accent); white-space: normal; overflow-wrap: anywhere; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-/* as 5 células do trilho só funcionam se tiverem a mesma altura de leitura: a frase do estado
-   ocupa sempre duas linhas — min-height e não max-height, para nunca cortar informação */
-.px-hero-steps li p { min-height: calc(2 * 1.5 * var(--px-fs-meta)); }
 
 /* ── 31. painel de pesquisa: a tinta era literal escrita para o ESCURO ────────────────
    A região `.rp-*` do operations.css recebeu cores próximas de branco como valor de base, sem

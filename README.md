@@ -194,22 +194,35 @@ Detalhes de implementação:
   fixou `#93a1b5`/`#d7e1ee` nela — no tema claro isso virou texto apagado de novo (foi o que o
   print do usuário mostrou). Hoje `--px-side-*` (fundo, texto, forte, meta, hover, fio, ativo) é
   definido em `:root` e repintado em `html.dark`, e o `scripts/contrast-audit.ts` mede os dois:
-  claro 8,87 / 15,99 / 4,73, escuro 13,07 / 17,44 / 7,98. Cor dura em componente = bug futuro.
+  claro 12,53 (item) / 17,45 (ativo e métrica) / 6,96 (legenda de grupo), escuro 13,91 / 18,45 /
+  7,72. Cor dura em componente = bug futuro.
 - **Fonte:** uma família para ler e uma para dado — `Geist Variable` (UI inteira) e
   `Geist Mono Variable` (números, rótulos de sistema, tempo). Vêm do `@fontsource-variable/*`
   empacotado no build, não de CDN: sem link externo, sem flash de fonte errada, funciona offline.
-  Os pesos são os do eixo variável (`--px-w-text 430`, `-medium 550`, `-strong 620`, `-title 680`),
-  então corpo e rótulo diferem por peso de verdade em vez de brigar por tamanho. Trocar isso por
-  mais uma família é o caminho de volta para o app parecer montado por peças.
+  Os pesos são o conjunto aprovado — `--px-w-text 400` (corpo), `-medium 500` (navegação),
+  `-strong 600` (seção/label), `-title 700` (título) e `-score 780` só para número grande — e o
+  eixo variável existe para ajustar detalhe, não para inventar degrau novo: 430/550/620 viraram
+  regra que ninguém lia. Hierarquia se resolve por peso + cor de tema, não por 20 tamanhos. Trocar
+  a família por mais uma é o caminho de volta para o app parecer montado por peças.
 - **Nenhum tamanho solto:** `grep` de `font-size: NNpx` / `font: … NNpx` nos quatro arquivos de
   estilo devolve **zero** — 186 declarações de tamanho e 102 de raio caíram para a escala (a banda de
   microtipografia, que tinha 12 valores entre 9,6 e 13,8px, virou label/meta/body), e os 14 raios
   literais viraram os quatro tokens + `--px-radius-pill`. Regra prática ao mexer aqui: tamanho novo
   só entra na escala, nunca no componente.
+- **Escala semântica de tinta (cinco degraus):** `--px-text-primary` / `-secondary` / `-tertiary` /
+  `-muted` / `-disabled`. Os três primeiros passam de 4,5:1 até sobre o canvas (o fundo mais difícil
+  do claro): 15,9 / 9,3 / 6,1 no claro e 18,7 / 12,7 / 7,7 no escuro; `-muted` é rótulo auxiliar
+  (4,6 / 5,6) e `-disabled` existe SÓ para controle desativado. `--px-text`, `--px-text-2` e
+  `--px-text-3` viraram alias desses níveis, então componente nenhum precisa conhecer número hexadecimal.
+  O `contrast-audit` mede também o SALTO entre vizinhos e exige ≥ 1,3×: o defeito real não era falta
+  de contraste, era secondary/tertiary/disabled colados no mesmo cinza — degrau colado é o mesmo
+  problema de "20 tamanhos", só que em tinta. **Texto informativo nunca entra em `opacity`:** opacidade
+  0,4–0,6 sobre texto pequeno é o "apagado" disfarçado de hierarquia; botão desativado usa `-disabled`
+  (e os PREENCHIDOS seguem escurecendo por inteiro, porque ali o véu é do controle, não da frase).
 - **Contraste:** medido, não opinado. `pnpm exec tsx scripts/contrast-audit.ts` lê os tokens de
   `depth.css` (inclusive o bloco `html.dark`) e calcula a razão WCAG 2.1 dos pares que importam —
-  texto de página, secundário, meta, CTA, accent como texto, ok/warn/bad, ausência e separação de
-  plano. Meta: ≥ 4,5 para texto e ≥ 3 para rótulo; quando um plano não separa por luminância
+  texto de página, os cinco degraus sobre canvas e sobre card, CTA, accent como texto, ok/warn/bad,
+  ausência, métrica da sidebar e separação de plano. Meta: ≥ 4,5 para texto e ≥ 3 para rótulo; quando um plano não separa por luminância
   (branco sobre branco no claro), o script mede o fio. Baseline da primeira rodada: **8 pares
   reprovados no claro e 1 no escuro**, inclusive o botão primário ilegível (2,53:1); hoje **0 e 0**.
   Rodar o script depois de mexer em cor é obrigatório pelo mesmo motivo do gerador de tema: olho

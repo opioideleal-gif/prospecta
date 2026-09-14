@@ -72,10 +72,35 @@ function ratio(fgRaw: string | undefined, bgRaw: string | undefined, tokens: Rec
   const l2 = lum(bg);
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 }
-const tok = (t: Record<string, string>, name: string) => (t[name] ?? "").replace(/var\(--px-[\w-]+\)/g, "").trim();
+/**
+ * Resolve o token SEGUIDO a cadeia de `var()`. A versão anterior ARRANCAVA o `var(...)` do valor,
+ * o que funcionava enquanto todo token era literal e silenciou dezoito pares no dia em que a escala
+ * passou a ser semântica (--px-text → var(--px-text-primary)): auditor que imprime "(não medido)"
+ * é pior que auditor nenhum, porque parece veredicto.
+ */
+const tok = (t: Record<string, string>, name: string, depth = 0): string => {
+  const raw = (t[name] ?? "").trim();
+  if (!raw || depth > 6) return raw;
+  return raw.replace(/var\((--px-[\w-]+)\)/g, (m, dep) => (dep === name ? m : tok(t, dep, depth + 1)));
+};
 
 // o que aparece em cada plano — foreground contra o fundo real daquele plano
 const PAIRS: Array<{ label: string; fg: string; bg: string; min: number; scope: string }> = [
+  /* A escala SEMÂNTICA de cinco degraus, medida nos dois fundos onde ela vive. Estes pares existem
+     para que "mudei o token e sumiu um nível" deixe de ser descoberta visual: os quatro primeiros
+     têm de passar 4,5:1 inclusive sobre o canvas (o fundo mais difícil do claro). */
+  { label: "PRIMARY sobre canvas", fg: "--px-text-primary", bg: "--px-canvas", min: 4.5, scope: "body" },
+  { label: "PRIMARY sobre card", fg: "--px-text-primary", bg: "--px-surface-2", min: 4.5, scope: "body" },
+  { label: "SECONDARY sobre canvas", fg: "--px-text-secondary", bg: "--px-canvas", min: 4.5, scope: "body" },
+  { label: "SECONDARY sobre card", fg: "--px-text-secondary", bg: "--px-surface-2", min: 4.5, scope: "body" },
+  { label: "TERTIARY sobre canvas", fg: "--px-text-tertiary", bg: "--px-canvas", min: 4.5, scope: "body" },
+  { label: "TERTIARY sobre card", fg: "--px-text-tertiary", bg: "--px-surface-2", min: 4.5, scope: "body" },
+  { label: "UTILITY (label/muda) sobre canvas", fg: "--px-text-muted", bg: "--px-canvas", min: 4.5, scope: "label" },
+  { label: "UTILITY (label/muda) sobre card", fg: "--px-text-muted", bg: "--px-surface-2", min: 4.5, scope: "label" },
+  { label: "badge de métrica sobre a sidebar", fg: "--px-side-strong", bg: "--px-surface-2", min: 4.5, scope: "text" },
+  { label: "meta sobre painel", fg: "--px-text-3", bg: "--px-surface-1", min: 4.5, scope: "body" },
+  { label: "meta sobre o painel de pesquisa", fg: "--px-text-3", bg: "--px-surface-1", min: 4.5, scope: "body" },
+  { label: "DISABLED é só para desativado (piso baixo, intencional)", fg: "--px-text-disabled", bg: "--px-surface-2", min: 2.2, scope: "ink" },
   { label: "texto de página", fg: "--px-text", bg: "--px-surface", min: 4.5, scope: "body" },
   { label: "título sobre canvas", fg: "--px-text", bg: "--px-canvas", min: 4.5, scope: "body" },
   { label: "secundário em card", fg: "--px-text-2", bg: "--px-surface-2", min: 4.5, scope: "body" },
@@ -120,4 +145,20 @@ const light = tokensOf(":root {");
 const dark = { ...light, ...tokensOf("html.dark {") };
 const f1 = report("LIGHT  (:root)", light);
 const f2 = report("DARK   (html.dark)", dark);
-console.log(`\nresumo: ${f1.length} falhas no claro, ${f2.length} no escuro`);
+/* ── degraus: hierarquia só existe se o olho separa um do outro ────────────────────────
+   Media cada nível sobre o card — o fundo MAIS FÁCIL, onde a diferença é a primeira a sumir — e
+   exige salto de 1,3× entre vizinhos. Secondary/tertiary/disabled colados no mesmo cinza era o
+   defeito real da interface, não a ausência de contraste. */
+const LADDER = ["--px-text-primary", "--px-text-secondary", "--px-text-tertiary", "--px-text-muted", "--px-text-disabled"];
+let ladderFails = 0;
+for (const [name, map] of [["LIGHT", light], ["DARK", dark]] as const) {
+  const steps = LADDER.map((tk) => ratio(tok(map, tk), tok(map, "--px-surface-2"), map));
+  if (steps.some((s) => s === null)) { console.log(`\n${name} degraus: (não medido)`); continue; }
+  const nums = steps as number[];
+  const jumps = nums.slice(1).map((s, i) => (s > 0 ? nums[i] / s : 0));
+  const weak = jumps.filter((j) => j < 1.3).length;
+  ladderFails += weak;
+  console.log(`\n${name} · escada de tinta: ${LADDER.map((tk, i) => `${tk.replace("--px-text-", "").toUpperCase()} ${nums[i].toFixed(1)}`).join("  →  ")} (sobre o card)`);
+  console.log(`  saltos entre degraus: ${jumps.map((j) => `${j.toFixed(2)}×`).join("  ·  ")}${weak ? `   → ${weak} salto(s) colado(s) (<1,3×)` : "   → separação ok"}`);
+}
+console.log(`\nresumo: ${f1.length} falhas no claro, ${f2.length} no escuro${ladderFails ? `, ${ladderFails} salto(s) de degrau colado(s)` : ""}`);

@@ -56,9 +56,9 @@
 /* ---------- Estágio / mover no funil ---------- */
 
 .stage-stepper { display: grid; grid-template-columns: 30px minmax(0, 1fr) 30px; gap: 9px; align-items: center; }
-.step-button { width: 30px; height: 30px; border: 1px solid var(--hairline); background: #fff; border-radius: var(--px-radius-xs); color: #66758a; display: grid; place-items: center; transition: .16s ease; }
+.step-button { width: 30px; height: 30px; border: 1px solid var(--hairline); background: var(--px-surface-2); border-radius: var(--px-radius-xs); color: #66758a; display: grid; place-items: center; transition: .16s ease; }
 .step-button:hover:not(:disabled) { border-color: var(--lime-deep); color: #4f7a15; background: #fbfdea; }
-.step-button:disabled { opacity: .34; cursor: not-allowed; }
+.step-button:disabled { color: var(--px-text-disabled); cursor: not-allowed; }
 .stage-now { min-width: 0; text-align: center; }
 .stage-now .status-pill { margin-bottom: 5px; }
 .stage-now small { display: block; font-size: var(--px-fs-label); color: #8b98a8; line-height: 1.35; }
