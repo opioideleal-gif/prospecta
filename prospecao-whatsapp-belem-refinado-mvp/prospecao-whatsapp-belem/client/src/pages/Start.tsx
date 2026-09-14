@@ -35,6 +35,7 @@ function stateFor(key: (typeof STEPS)[number]["key"], query: string, hunting: bo
 type Props = {
   hunting: boolean;
   error?: string;
+  errorDetail?: string;
   query: string;
   setQuery: (value: string) => void;
   onHunt: (query: string) => void;
@@ -56,7 +57,7 @@ type Props = {
  * gradualmente conforme o sistema tem o que dizer — nada aqui é preenchido com número
  * inventado: se não há busca, o bloco de recentes diz isso e convida.
  */
-export function Start({ hunting, error, query, setQuery, onHunt, results, lastQuery, recentSearches, recentLeads, insights, onOpenLead, onAddHunted, onResearchHunted, onGoHunt, onGoLeads }: Props) {
+export function Start({ hunting, error, errorDetail, query, setQuery, onHunt, results, lastQuery, recentSearches, recentLeads, insights, onOpenLead, onAddHunted, onResearchHunted, onGoHunt, onGoLeads }: Props) {
   const root = useRef<HTMLDivElement | null>(null);
   const input = useRef<HTMLInputElement | null>(null);
   const scan = useRef<HTMLSpanElement | null>(null);
@@ -111,13 +112,13 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
             </div>
             <div className="px-search-foot">
               <span>Busque empresas, descubra sinais e transforme isso em conversa.</span>
-              {state && <span className={`px-search-state ${hunting ? "is-live" : ""}`}><i />{state}{state === "SIGNALS FOUND" ? ` · ${results.length}` : ""}</span>}
+              {state && <span className={`px-search-state ${hunting ? "is-live" : ""}${error ? " is-error" : ""}`}><i />{state}{state === "SIGNALS FOUND" ? ` · ${results.length}` : ""}</span>}
               <span className="px-search-hint"><kbd>/</kbd> para buscar · <kbd>esc</kbd> limpa</span>
             </div>
             <span className="px-scan" ref={scan} />
           </div>
 
-          {error && <p className="px-hero-error">{error} — nada foi adicionado à sua carteira.</p>}
+          {error && <p className="px-hero-error">{error} — nada foi adicionado à sua carteira.{errorDetail && <em className="px-error-raw">resposta técnica: {errorDetail}</em>}</p>}
         </section>
 
           <ol className="px-hero-steps" data-motion aria-label="Como o Prospecta trabalha">

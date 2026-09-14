@@ -190,6 +190,11 @@ Detalhes de implementação:
   score. Não existe tamanho de fonte solto em `depth.css`: se um número não tem papel, ele não tem
   tamanho. E **borda significa interação**: card só tem anel quando é o principal, é prioridade sua
   ou está sendo olhado; o resto do agrupamento é espaço + fio de 1px + plano de fundo.
+- **Cor de texto é token de tema, nunca literal:** a barra lateral nasceu escura e o `index.css`
+  fixou `#93a1b5`/`#d7e1ee` nela — no tema claro isso virou texto apagado de novo (foi o que o
+  print do usuário mostrou). Hoje `--px-side-*` (fundo, texto, forte, meta, hover, fio, ativo) é
+  definido em `:root` e repintado em `html.dark`, e o `scripts/contrast-audit.ts` mede os dois:
+  claro 8,87 / 15,99 / 4,73, escuro 13,07 / 17,44 / 7,98. Cor dura em componente = bug futuro.
 - **Fonte:** uma família para ler e uma para dado — `Geist Variable` (UI inteira) e
   `Geist Mono Variable` (números, rótulos de sistema, tempo). Vêm do `@fontsource-variable/*`
   empacotado no build, não de CDN: sem link externo, sem flash de fonte errada, funciona offline.

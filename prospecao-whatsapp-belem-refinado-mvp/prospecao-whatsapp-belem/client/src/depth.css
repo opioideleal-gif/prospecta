@@ -53,11 +53,17 @@
   /* unico tamanho fora da escala tipografia: a barra tem 250px e o item precisa caber com o
      badge ao lado - 14px ali nao cabe, 11,5px e o 'apagado' que combatemos */
   --px-fs-nav: 13.5px;
-  /* a sidebar e escura nos dois temas: a cor dela nao vem do tema, vira token proprio */
-  --px-side-bg: #0a1221;
-  --px-side-text: #c6d3e4;
-  --px-side-strong: #eaf1fa;
-  --px-side-meta: #93a6bf;
+  /* A barra de navegação tem plano e texto próprios em CADA tema: no claro é um cinza frio
+     ligeiramente mais escuro que a tela; no escuro (html.dark) é quase preto com tinta clara.
+     Endurecer isso em #0a1221 + azul-claro funcionava só no escuro — no claro virou o mesmo
+     "texto apagado" que a fase inteira veio combater. */
+  --px-side-bg: #eef3f9;
+  --px-side-text: #33445c;
+  --px-side-strong: #0e1826;
+  --px-side-meta: #5c6d84;
+  --px-side-hover: rgba(16,26,43,.055);
+  --px-side-edge: rgba(16,26,43,.12);
+  --px-side-active: #e7eddd;
   /* o campo de busca é o maior texto interativo da tela — ele merece um passo próprio */
   --px-fs-input: clamp(18px, 1.9vw, 25px);
   --px-fs-num: 22px;
@@ -112,6 +118,13 @@ html.dark {
   --px-glass: rgba(19, 30, 43, .74);
   --px-hl: rgba(255, 255, 255, .055);
   --px-inner-light: rgba(255, 255, 255, .05);
+  --px-side-bg: #060a10;
+  --px-side-text: #c6d3e4;
+  --px-side-strong: #eaf1fa;
+  --px-side-meta: #93a6bf;
+  --px-side-hover: rgba(255,255,255,.06);
+  --px-side-edge: rgba(255,255,255,.09);
+  --px-side-active: #263127;
 }
 
 /* base tipográfica: uma família para ler, uma para dado, e o resto é peso e entreletra */
@@ -191,8 +204,8 @@ html.dark :is(.view-switch button, .view-switch button b, .xray-grid h4, .xray-g
 }
 html:not(.dark) .main-content::before { opacity: .5; }
 .app-shell { background: var(--px-canvas); }
-.sidebar { background: linear-gradient(178deg, var(--px-surface-1), var(--px-canvas) 68%); border-right: 1px solid var(--px-edge); }
-html.dark .sidebar { background: #060a10; }
+.sidebar { background: var(--px-side-bg); color: var(--px-side-text); border-right: 1px solid var(--px-side-edge); }
+html.dark /* (o fundo da barra agora é --px-side-bg nos dois temas) */
 html.dark .sidebar::before { background: radial-gradient(circle, color-mix(in srgb, var(--px-accent) 14%, transparent), transparent 66%); }
 .page-content { gap: var(--px-s5); }
 .page-content > section, .rp-panel, .hunt-form, .research-callout { background: var(--px-surface-1); border: 1px solid var(--px-edge); border-radius: var(--px-radius-lg); box-shadow: var(--px-shadow-1); }
@@ -780,3 +793,56 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-star { transition: color var(--px-fast), background var(--px-fast), transform var(--px-fast) var(--px-ease); }
 html.px-theme-swap :is(body, .app-shell, .sidebar, .main-content, .topbar, .lead-card, .hunt-card, .px-rail-card, .hunt-form) { transition: background-color .26s var(--px-ease), color .26s var(--px-ease), border-color .26s var(--px-ease); }
 @media (prefers-reduced-motion: reduce) { .px-star:active { transform: none; } html.px-theme-swap :is(body, .app-shell, .main-content, .topbar) { transition: none; } }
+
+/* ── 27. barra lateral legível nos DOIS temas ───────────────────────────────────────
+   index.css foi escrito para uma barra escura única; o tema claro herdou as cores de texto
+   dela e virou #93a1b5 sobre #eef3f9. Tudo passa por --px-side-*, que o html.dark repinta. */
+.sidebar { background: var(--px-side-bg); color: var(--px-side-text); border-right: 1px solid var(--px-side-edge); }
+.sidebar::before { background: radial-gradient(circle, color-mix(in srgb, var(--px-accent) 16%, transparent), transparent 68%); }
+.sidebar .brand-lockup strong { color: var(--px-side-strong); }
+.sidebar .brand-lockup span { color: var(--px-side-meta); }
+.sidebar .sidebar-section-label { color: var(--px-side-meta); }
+.sidebar .nav-item, .sidebar .shortcut-list button { color: var(--px-side-text); }
+.sidebar .nav-item:hover, .sidebar .shortcut-list button:hover { color: var(--px-side-strong); background: var(--px-side-hover); }
+.sidebar .nav-item.active { color: var(--px-side-strong); background: var(--px-side-active); box-shadow: none; }
+.sidebar .nav-count { color: var(--px-side-meta); background: var(--px-side-hover); }
+.sidebar .sidebar-bottom { border-top-color: var(--px-side-edge); }
+.sidebar .mini-profile strong { color: var(--px-side-strong); }
+.sidebar .mini-profile span { color: var(--px-side-meta); }
+.sidebar .profile-avatar { background: color-mix(in srgb, var(--px-accent) 26%, var(--px-side-bg)); color: var(--px-side-strong); }
+.sidebar .privacy-note { color: var(--px-side-meta); }
+.sidebar .privacy-note svg { color: var(--px-accent); }
+.sidebar .nav-item svg, .sidebar .shortcut-list svg { color: inherit; }
+html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --px-side-meta: #4a5b73; }
+@media (max-width: 700px) {
+  .sidebar { background: color-mix(in srgb, var(--px-side-bg) 90%, transparent); border-right: 0; border-top: 1px solid var(--px-side-edge); }
+}
+
+/* ── 28. trilho de passos sem disco ───────────────────────────────────────────────
+   A regra antiga de pill (borda, raio 99px, fundo lavado, mono em caixa alta com tracking)
+   continuou viva depois do trilho de 5 nós: esticada pela grid, cada li virou um estádio cinza
+   e a frase de estado quebrou uma palavra por linha. O li volta a ser só um li — quem marca o
+   passo é o número, o fio e o estado. */
+.px-hero-steps li { border: 0; border-radius: 0; background: none; padding: 0 var(--px-s4); font: inherit; letter-spacing: 0; text-transform: none; color: var(--px-text-2); align-content: start; }
+.px-hero-steps li + li { border-left: 1px solid var(--px-edge); }
+.px-hero-steps li + li::before { content: none; }
+.px-hero-steps p { font: 400 var(--px-fs-meta)/1.5 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.004em; text-transform: none; max-width: 21ch; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.px-hero-steps b { width: 22px; height: 22px; font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: 0; }
+.px-hero-steps span { font-size: var(--px-fs-label); letter-spacing: .13em; color: var(--px-text-2); }
+.px-hero-steps li[data-state="now"] span { color: var(--px-text); }
+.px-hero-steps li[data-state="idle"] p { color: var(--px-text-3); }
+.px-search { background: linear-gradient(150deg, var(--px-edge-strong), color-mix(in srgb, var(--px-accent) 38%, var(--px-edge-strong))); }
+.px-search-state.is-error { color: var(--px-bad); }
+.px-search-state.is-error i { animation: none; background: var(--px-bad); }
+@media (max-width: 1180px) { .px-hero-steps p { -webkit-line-clamp: 2; max-width: none; } }
+
+/* o brilho do hero sangra para fora do container de propósito (inset negativo); sangramento
+   horizontal é o que faz a página inteira ganhar barra de rolagem lateral. clip não cria
+   contêiner de rolagem no eixo vertical, então a ficha e o sticky seguem funcionando. */
+.page-content { overflow-x: clip; }
+.px-hero::after { inset: auto -4% -38% -4%; }
+
+/* o erro fala a língua da pessoa e mostra a resposta crua do provedor embaixo, no mesmo bloco:
+   title de mouse não é acessível por teclado e esconder a resposta seria fingir clareza */
+.px-hero-error { display: grid; gap: var(--px-s2); max-width: 74ch; }
+.px-error-raw { font: 400 var(--px-fs-meta)/1.45 "Geist Mono Variable", ui-monospace, monospace; font-style: normal; color: var(--px-text-2); word-break: break-word; }
