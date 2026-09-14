@@ -91,9 +91,7 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
             <div className="px-search-foot">
               <span>Busque empresas, descubra sinais e transforme isso em conversa.</span>
               {state && <span className={`px-search-state ${hunting ? "is-live" : ""}`}><i />{state}{state === "SIGNALS FOUND" ? ` · ${results.length}` : ""}</span>}
-              <span style={{ marginLeft: "auto", fontFamily: "DM Mono, monospace", fontSize: 10, color: "var(--px-text-3)" }}>
-                <kbd>/</kbd> para buscar
-              </span>
+              <span className="px-search-hint"><kbd>/</kbd> para buscar · <kbd>esc</kbd> limpa</span>
             </div>
             <span className="px-scan" ref={scan} />
           </div>
