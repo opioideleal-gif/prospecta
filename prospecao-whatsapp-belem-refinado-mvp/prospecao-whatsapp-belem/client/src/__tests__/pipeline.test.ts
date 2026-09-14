@@ -7,7 +7,7 @@
  * Rodar com: pnpm test
  */
 import { describe, expect, it } from "vitest";
-import { buildResearchRecord, mergeFacts, parsePageFacts, unverifiedFacts, verifiedFacts } from "@shared/research";
+import { buildResearchRecord, mergeFacts, parsePageFacts, unverifiedFacts, verifiedFacts, withSearchListing } from "@shared/research";
 import { formatPhoneBr, toWhatsAppNumber } from "@shared/normalize";
 import { buildApproaches, contextFromLead, objectiveFor, pickApproachText, type Objective } from "@/approach";
 import { evidenceScore, interpretLead } from "@/intelligence";
@@ -222,6 +222,29 @@ describe("4. normalização mantém exibição amigável e forma canônica", () 
     expect(patch.phone).toBe("91999887766");
     expect(formatPhoneBr(patch.phone)).toBe("(91) 99988-7766");
     expect(`https://wa.me/${toWhatsAppNumber(patch.phone)}`).toBe("https://wa.me/5591999887766");
+  });
+});
+
+describe("4b. vir da caça prova listagem em buscador — e só a caça prova isso", () => {
+  const page = parsePageFacts(HOME_HTML, URL);
+  it("parsear página nunca afirma presença no buscador", () => {
+    expect(page.presence.searchListing.state).toBe("unknown");
+    expect(unverifiedFacts(page)).toContain("presença em buscador não verificada");
+  });
+  it("a busca pública marca o item como verificado, com evidência e fonte", () => {
+    const hunted = withSearchListing(page, 'empresa encontrada em Bing HTML público para “padaria Belém”', "https://bing.com/search?q=padaria");
+    expect(hunted.presence.searchListing.state).toBe("found");
+    expect(unverifiedFacts(hunted)).not.toContain("presença em buscador não verificada");
+    expect(hunted.presence.site.state).toBe(page.presence.site.state); // nada mais foi tocado
+    const sparse = withSearchListing(parsePageFacts(`<html><head><title>Sozinha</title><meta name="description" content="Página curta de teste."></head><body><h2>Serviços</h2><h2>Vendas</h2></body></html>`, URL), "empresa encontrada em Bing HTML público para “padaria Belém”", "https://bing.com/search?q=padaria");
+    const scored = evidenceScore({ score: 60, site: "paoquente.com.br" }, sparse);
+    const delta = scored.deltas.find((d) => /listagem em buscador/.test(d.label));
+    expect(delta?.delta).toBe(2);
+    expect(delta?.evidence).toMatch(/Bing HTML público/);
+    // quando o teto de evidência morder, o delta listado continua sendo o aplicado
+    const crowded = evidenceScore({ score: 60, site: "paoquente.com.br" }, hunted);
+    expect(crowded.deltas.reduce((sum, d) => sum + d.delta, 0)).toBe(crowded.score - crowded.base);
+    expect(crowded.deltas.some((d) => /listagem em buscador/.test(d.label))).toBe(true);
   });
 });
 

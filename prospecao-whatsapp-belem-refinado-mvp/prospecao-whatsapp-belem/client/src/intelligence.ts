@@ -194,6 +194,7 @@ export function evidenceScore(
   if (has(facts.presence.catalog) && !has(facts.presence.ecommerce)) push("mostra o produto mas não vende online", 9, facts.presence.catalog.evidence);
   if (has(facts.presence.ecommerce)) push("e-commerce ativo: ticket recorrente", 4);
   if (facts.address) push("endereço físico publicado", 4);
+  if (facts.presence.searchListing.state === "found") push("listagem em buscador: é achado por quem procura", 2, facts.presence.searchListing.evidence);
   // comparado com o estado ANTES da pesquisa: com `had` informado, o lead já preenchido
   // não apaga o mérito de termos achado o contato que faltava
   const phoneBefore = (had ?? lead).phone;

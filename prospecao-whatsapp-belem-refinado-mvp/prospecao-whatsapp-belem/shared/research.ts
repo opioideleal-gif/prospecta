@@ -293,8 +293,16 @@ export function unverifiedFacts(facts?: PageFacts): string[] {
   if (facts.presence.catalog.state === "absent") out.push("catálogo/cardápio não identificado");
   if (facts.presence.ecommerce.state === "absent") out.push("venda online não identificada");
   if (facts.presence.recentContent.state === "absent") out.push("frequência de atualização não verificada");
-  out.push("presença em buscador não verificada");
+  if (facts.presence.searchListing.state !== "found") out.push("presença em buscador não verificada");
   return out;
+}
+
+/**
+ * Marca que a empresa foi encontrada numa busca pública (é o que a caça de leads prova).
+ * parsePageFacts nunca afirma isso — só quem consultou um buscador pode.
+ */
+export function withSearchListing(facts: PageFacts, evidence: string, url?: string): PageFacts {
+  return { ...facts, presence: { ...facts.presence, searchListing: found(evidence, url) } };
 }
 
 /** Base de um registro de pesquisa — o servidor só acrescenta `sources` e `researchHash`. */

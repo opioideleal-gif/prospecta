@@ -401,6 +401,13 @@ describe("caça com ações por empresa (nada entra sozinho)", () => {
     await click(q(".hunt-actions button:nth-child(2)")); // Adicionar aos Leads
     await tab("Leads");
     expect(text()).toContain("Refrigeração Exemplo");
+    // vir na caça é prova de listagem em buscador: o item deixa de ser "não verificado"
+    await setInput(q(".search-field input"), "Refrigeração Exemplo");
+    await click(q(".lead-card .more-button"));
+    const google = qa(".rp-row").find((row) => (row.textContent || "").startsWith("Listagem no Google"));
+    expect(google?.textContent).toContain("encontrado");
+    expect(google?.textContent).toMatch(/refrigeração Belém/);
+    await click(q(".modal-close"));
     expect(text()).toContain("de 158"); // 157 + a que eu escolhi
   });
   it("abre o WhatsApp do caçado com a mensagem gerada, sem criar lead", async () => {
