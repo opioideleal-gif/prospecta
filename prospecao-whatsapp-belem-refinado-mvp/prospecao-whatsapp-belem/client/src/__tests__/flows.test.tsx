@@ -448,6 +448,28 @@ describe("releitura do site sem perder o que o vendedor fez", () => {
   });
 });
 
+describe("releitura que falha não destrói o que já foi verificado", () => {
+  it("mantém fatos, score e painel quando o site cai entre uma leitura e outra", async () => {
+    const good = parsePageFacts(SITE_HTML, "https://www.imoveisbelem.belem.br");
+    stubRoutes({ "/api/research": { record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: "h1", signals: [], opportunities: [], sources: [], facts: good } } });
+    await tab("Leads");
+    await setInput(q(".search-field input"), "Skye");
+    await click(q(".lead-card .more-button"));
+    await click(byText(".research-callout button", "Pesquisar empresa"));
+    expect(text()).toContain("DADOS ENCONTRADOS");
+    expect(q(".rp-row.rp-found")).toBeTruthy();
+    const scoreAfterFirstRead = (q(".detail-score strong") as HTMLElement).textContent;
+    // agora a releitura encontra o site fora do ar
+    const dead = parsePageFacts("", "https://www.imoveisbelem.belem.br", { fetchOk: false });
+    stubRoutes({ "/api/research": { record: { lastResearchAt: "2026-09-14T00:00:00.000Z", researchHash: "h2", signals: [], opportunities: [], sources: [], facts: dead } } });
+    await click(byText(".research-callout button", "Reler o site"));
+    expect(text()).toContain("mantive os dados verificados anteriormente");
+    expect((q(".detail-score strong") as HTMLElement).textContent).toBe(scoreAfterFirstRead);
+    expect(q(".rp-row.rp-found")).toBeTruthy(); // os fatos antigos seguem exibidos
+    expect(q(".research-callout")?.textContent).toMatch(/mantidos|Reler o site/);
+  });
+});
+
 describe("pesquisa aplicada na ficha do lead", () => {
   async function openLeadWithSite() {
     await tab("Leads");

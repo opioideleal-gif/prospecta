@@ -162,15 +162,19 @@ const row = rows.slice(1)[index]; const name = find(row, ["empresa", "nome", "ra
   /** pesquisa -> dados do lead -> interpretacao -> score -> abordagem. Vale para o lead da carteira e para o caçado. */
   function applyResearchResult(lead: Lead, record: Record<string, unknown>) {
     const facts = record.facts as PageFacts | undefined;
-    const researchedAt = (record.lastResearchAt as string | undefined) ?? new Date().toISOString();
-    const { patch, added, preserved, ignored } = leadPatchFromResearch(lead, facts, researchedAt);
+    const fetchedAt = (record.lastResearchAt as string | undefined) ?? new Date().toISOString();
+    // uma releitura que falha não pode apagar o que uma leitura anterior confirmou
+    const keepPrevious = !facts?.fetchOk && Boolean(lead.facts?.fetchOk);
+    const effective = keepPrevious ? lead.facts : facts;
+    const researchedAt = keepPrevious ? lead.researchedAt ?? lead.research?.lastResearchAt ?? fetchedAt : fetchedAt;
+    const { patch, added, preserved, ignored } = leadPatchFromResearch(lead, effective, researchedAt);
     const merged = { ...lead, ...patch } as Lead;
-    const interpretation = interpretLead(merged, facts);
-    const scored = evidenceScore(merged, facts);
+    const interpretation = interpretLead(merged, effective);
+    const scored = evidenceScore(merged, effective);
     const signals = (record.signals as string[] | undefined) ?? [];
     const opportunities = (record.opportunities as string[] | undefined) ?? [];
     const sources = (record.sources as ResearchSummary["sources"] | undefined) ?? [];
-    const researchEventText = `Pesquisa em ${facts?.host ?? lead.site}: ${added.length ? `dados aproveitados: ${added.join(", ")}` : facts?.fetchOk ? "nenhum dado novo além do que já estava cadastrado" : "o site não respondeu à leitura"}${preserved.length ? ` · preservados: ${preserved.join(", ")}` : ""}${ignored.length ? ` · ignorados: ${ignored.join(", ")}` : ""}. Score ${scored.base}→${scored.score}.`;
+    const researchEventText = `${keepPrevious ? "Releitura falhou em" : "Pesquisa em"} ${effective?.host ?? lead.site}: ${added.length ? `dados aproveitados: ${added.join(", ")}` : facts?.fetchOk ? "nenhum dado novo além do que já estava cadastrado" : "o site não respondeu à leitura"}${preserved.length ? ` · preservados: ${preserved.join(", ")}` : ""}${ignored.length ? ` · ignorados: ${ignored.join(", ")}` : ""}. Score ${scored.base}→${scored.score}.`;
     updateLead(lead.id, {
       ...patch,
       researchLoading: false, researchError: undefined,
@@ -178,11 +182,12 @@ const row = rows.slice(1)[index]; const name = find(row, ["empresa", "nome", "ra
       objective: lead.objective ?? objectiveFor({ opportunity: interpretation?.opportunity ?? merged.opportunity, service: merged.service, pain: merged.pain, segment: merged.segment, facts }),
       score: scored.score, scoreBase: scored.base, scoreDeltas: scored.deltas,
       intelligence: analyzeLead({ ...merged, facts }),
-      research: { lastResearchAt: researchedAt, researchHash: (record.researchHash as string | undefined) ?? "", sources, signals, opportunities, summary: record.summary as string | undefined, headline: interpretation?.headline, unverified: interpretation?.unverified, researchedAt, facts },
+      research: { lastResearchAt: researchedAt, researchHash: (keepPrevious ? lead.research?.researchHash : (record.researchHash as string | undefined)) ?? "", error: keepPrevious ? `a releitura não conseguiu ler a página (${facts?.httpStatus ? `HTTP ${facts.httpStatus}` : "sem resposta"}); os dados verificados anteriormente foram mantidos` : undefined, sources, signals, opportunities, summary: record.summary as string | undefined, headline: interpretation?.headline, unverified: interpretation?.unverified, researchedAt, facts: effective },
       events: [...(lead.events || []), { id: crypto.randomUUID(), type: "nota", note: researchEventText, at: new Date().toISOString() }],
     });
     const detail = added.length ? `dados aproveitados: ${added.join(", ")}` : facts?.fetchOk ? "nenhum dado novo além do que já estava cadastrado" : "o site não respondeu à leitura";
-    notify(`Pesquisa aplicada: ${added.length} campo(s) novos, score ${scored.base}→${scored.score}.`);
+    if (keepPrevious) notify("Não consegui reler o site — mantive os dados verificados anteriormente, o score não mudou.");
+    else notify(`Pesquisa aplicada: ${added.length} campo(s) novos, score ${scored.base}→${scored.score}.`);
   }
   function scheduleFollowUp(lead: Lead, days: number) { const date = new Date(); date.setDate(date.getDate() + days); updateLead(lead.id, { nextAction: "follow-up", nextActionAt: date.toISOString(), events: [...(lead.events || []), { id: crypto.randomUUID(), type: `Follow-up programado para ${date.toLocaleDateString("pt-BR")}`, at: new Date().toISOString() }] }); notify(`Follow-up criado para ${date.toLocaleDateString("pt-BR")}`); }
   function huntFromLead(lead: Lead) { setHuntPreset({ segment: lead.intelligence?.subsegment || lead.segment, location: lead.location.split("·").pop()?.trim() || "Belém" }); setActiveTab("hunt"); }

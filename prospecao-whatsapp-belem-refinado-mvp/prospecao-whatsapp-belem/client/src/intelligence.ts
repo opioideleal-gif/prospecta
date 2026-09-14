@@ -167,8 +167,10 @@ export function interpretLead(lead: { name: string; segment?: string; city?: str
 
 /** Score heurístico + ajustes por evidência. Cada ajuste diz de onde veio, então o
  *  "por quê" mostrado na tela é literalmente o cálculo. */
-export function evidenceScore(lead: { score?: number; phone?: string; email?: string; site?: string; pain?: string }, facts?: PageFacts) {
-  const base = Math.max(35, Math.min(98, lead.score ?? 60));
+export function evidenceScore(lead: { score?: number; scoreBase?: number; phone?: string; email?: string; site?: string; pain?: string }, facts?: PageFacts) {
+  // A base é o score ANTES de qualquer evidência: reler o site recomputa os mesmos deltas
+  // em vez de somar os antigos de novo (sem isso, cada clique em "Reler" inflamava o score).
+  const base = Math.max(35, Math.min(98, lead.scoreBase ?? lead.score ?? 60));
   const deltas: ScoreDelta[] = [];
   const push = (label: string, delta: number, evidence?: string) => { if (delta !== 0) deltas.push({ label, delta, evidence }); };
 

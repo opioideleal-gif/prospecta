@@ -169,6 +169,14 @@ describe("5. score consome a pesquisa e mostra os motivos que usou", () => {
     expect(base + 18).toBeGreaterThanOrEqual(92);
     expect(score).toBeLessThanOrEqual(98);
   });
+  it("reler o site não infla o score: a base é o score antes da evidência", () => {
+    const first = evidenceScore({ score: 62, site: "paoquente.com.br" }, facts);
+    expect(first.score).toBeGreaterThan(first.base);
+    // segundo clique em "Reler" parte da mesma base → mesmo resultado, não 62→80→98
+    const again = evidenceScore({ score: first.score, scoreBase: first.base, site: "paoquente.com.br" }, facts);
+    expect(again.score).toBe(first.score);
+    expect(again.base).toBe(first.base);
+  });
   it("sem pesquisa, score não recebe nenhum delta de evidência", () => {
     const { deltas } = evidenceScore({ score: 70 });
     expect(deltas).toEqual([]);

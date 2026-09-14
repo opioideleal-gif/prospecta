@@ -103,7 +103,11 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
   "pegando o gancho do que vocês me responderam", quem está encerrado recebe um texto sem oferta.
 - **Cache com saída:** o lead guarda `facts` + `researchedAt`, então a ficha não relê o site a cada
   abertura; o botão vira **Reler o site** e a releitura substitui análise e score **sem tocar** no que você
-  cadastrou nem no rascunho editado (uma releitura que falha também não apaga o que já foi verificado).
+  cadastrou nem no rascunho editado.
+- **Releitura é idempotente e não destrói:** o `scoreBase` congelado na primeira leitura é a base do
+  `evidenceScore`, então clicar em "Reler" recomputa os mesmos deltas em vez de somá-los de novo; e se a
+  releitura encontrar o site fora do ar, os fatos já verificados (e o score) são **mantidos**, com a
+  falha registrada no painel — um erro de rede não apaga trabalho nem vira penalidade.
 - O texto gerado é **editável**; ao copiar ou abrir o WhatsApp sai o seu texto, não o original
   (que volta com "restaurar texto gerado").
 
@@ -121,10 +125,10 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 76 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 78 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
-  estilos, objetivo, histórico, mensagem editada e persistência; `flows.test.tsx` (happy-dom) cobre
+  estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura; `flows.test.tsx` (happy-dom) cobre
   as 6 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload;
   `api.test.ts` valida o contrato das rotas Express.
 - **Follow-up:** "Concluir" limpa a data, registra o evento e **não** move o estágio — avançar
