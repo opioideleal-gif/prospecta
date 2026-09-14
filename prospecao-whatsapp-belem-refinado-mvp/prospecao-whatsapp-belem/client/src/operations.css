@@ -189,6 +189,26 @@
 .animate-spin { animation: spin 1s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ---------- Fechar o loop: concluir follow-up sem mexer no estágio ---------- */
+
+.fu-foot { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.fu-done { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #cfe3b8; background: #f6fbe8; color: #4f7a15; border-radius: 8px; padding: 6px 10px; font-size: 10px; font-weight: 600; }
+.fu-done:hover { background: #eef7d7; border-color: var(--lime-deep); }
+.fu-hint { font-size: 9px; color: #a3aebc; line-height: 1.4; flex: 1 1 160px; }
+.queue-row { grid-template-columns: 28px minmax(200px, 1fr) 128px 45px auto auto auto; }
+.queue-row .done-button { border-color: #d7e6c4; color: #4f7a15; background: #fbfdF5; }
+.queue-row .done-button:hover { border-color: var(--lime-deep); background: #f2f9e4; }
+
+/* ---------- Triagem dos resultados da caça ---------- */
+
+.hunt-cta { display: flex; align-items: center; gap: 8px; }
+.hunt-cta .dark-action:disabled { opacity: .45; cursor: not-allowed; transform: none; box-shadow: none; }
+.hunt-card h3 { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.confidence { font: 500 8px 'DM Mono'; letter-spacing: .06em; text-transform: uppercase; border-radius: 99px; padding: 3px 7px; background: #eef1f5; color: #6b7a8d; }
+.confidence.c-alta { background: #edf7c9; color: #55701e; }
+.confidence.c-média { background: #fff3dd; color: #8a6420; }
+.confidence.c-baixa { background: #fdeceb; color: #a05a49; }
+
 /* ---------- Navegação: todos os 6 destinos alcançáveis no mobile ---------- */
 
 @media (max-width: 700px) {
@@ -227,4 +247,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .animate-spin { animation-duration: .01ms; animation-iteration-count: infinite; }
+}
+
+@media (max-width: 700px) {
+  .queue-row { grid-template-columns: 22px minmax(0, 1fr) 40px; }
+  .queue-row .queue-action, .queue-row .done-button, .queue-row .outline-button, .queue-row .whatsapp-button { grid-column: 2; }
+  .hunt-cta { flex-wrap: wrap; }
+  .hunt-cta .outline-button { flex: 1; justify-content: center; }
 }

@@ -297,6 +297,60 @@ describe("ações no card e funil", () => {
     expect(qa(".lead-card").length).toBe(1);
     expect(text()).toContain("Imobiliárias");
   });
+  it("conclui follow-up sem alterar o estágio do funil", async () => {
+    await openDetail("Limaq");
+    await click(byText(".followup-actions button", "Amanhã"));
+    expect(text()).toContain("Follow-up agendado");
+    await click(byText(".fu-foot .fu-done", "Concluir follow-up"));
+    expect(text()).toContain("Follow-up concluído");
+    expect(q(".stage-now .status-pill")?.textContent).toBe("Novo");
+    expect(text()).toContain("sem follow-up");
+    expect(JSON.parse(localStorage.getItem("prospecta-leads-v2") || "[]").find((l: { id: string }) => l.id === "limaq").nextActionAt).toBeFalsy();
+    expect(JSON.parse(localStorage.getItem("prospecta-statuses-v2") || "{}").limaq).toBeUndefined();
+  });
+  it("exporta a seleção atual em CSV com separador compatível com a importação", async () => {
+    const blobs: Blob[] = [];
+    const original = window.URL.createObjectURL;
+    window.URL.createObjectURL = ((blob: Blob) => { blobs.push(blob); return "blob:prospecta"; }) as typeof window.URL.createObjectURL;
+    await click(byText(".side-nav .nav-item", "Leads"));
+    await setInput(q(".search-field input"), "Limaq");
+    await click(byText(".heading-actions .outline-button", "Exportar CSV"));
+    window.URL.createObjectURL = original;
+    expect(blobs).toHaveLength(1);
+    const csv = await blobs[0].text();
+    const [header, row] = csv.replace(/^\uFEFF/, "").split("\n");
+    expect(header.split(";").slice(0, 4)).toEqual(["empresa", "segmento", "subsegmento", "telefone"]);
+    expect(row).toContain("Limaq");
+    expect(row).toContain("91988799884");
+    expect(row).toContain("limaq.net");
+  });
+  it("mostra a confiança de cada resultado da caça e leva à carteira após importar", async () => {
+    const payload = {
+      query: "imobiliárias Belém",
+      provider: "Bing HTML público",
+      results: [
+        { id: "hunt-1", name: "Imobiliária Alfa", phone: "91991112233", whatsapp: "91991112233", site: "alfa-imoveis.com.br", segment: "imobiliárias", location: "Belém", score: 88, opportunity: "Captação por bairro", sourceUrl: "https://alfa-imoveis.com.br", sourceTitle: "Imobiliária Alfa", confidence: "alta" },
+        { id: "hunt-2", name: "Beta Logística", phone: "91993334455", site: undefined, segment: "distribuidora", location: "Belém", score: 62, opportunity: "Investigar oferta", sourceUrl: "https://beta.example", sourceTitle: "Beta Logística", confidence: "média" },
+      ],
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => ({ json: async () => payload, ok: true, status: 200 })));
+    await tab("Caçar Leads");
+    await click(q(".hunt-form button"));
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 30)));
+    vi.unstubAllGlobals();
+
+    expect(qa(".hunt-card")).toHaveLength(2);
+    expect(byText(".hunt-card .confidence", "confiança alta")).toBeTruthy();
+    expect(byText(".hunt-card .confidence", "confiança média")).toBeTruthy();
+    expect(text()).toContain("2 novas");
+    expect(text()).toContain("Adicionar selecionadas (2)");
+
+    await click(q(".hunt-cta .dark-action"));
+    expect(text()).toContain("Ver 2 na carteira");
+    expect(JSON.parse(localStorage.getItem("prospecta-leads-v2") || "[]").some((l: { name: string }) => l.name === "Imobiliária Alfa")).toBe(true);
+    await click(byText(".hunt-cta .outline-button", "Ver 2 na carteira"));
+    expect(q(".nav-item.active")?.textContent).toContain("Leads");
+  });
   it("usa as inferências heurísticas na oportunidade", async () => {
     await tab("Oportunidades");
     expect(text()).toContain("Dor provável");

@@ -55,8 +55,9 @@ Abra <http://localhost:3000>.
 | **Ficha da empresa** | Contato (telefone/WhatsApp/site/Instagram/e-mail/localização) com links reais, score com motivos, estágio com stepper, follow-up com data, observações, histórico completo e barra de ações fixa |
 | **Oportunidades** | Agrupamento por serviço ofertado com score médio e "caçar mais deste perfil" |
 | **Playbook** | 4 scripts por estágio (primeiro contato, follow-up, qualificação, agendamento) + as 3 abordagens Direta/Consultiva/Natural aplicadas a um lead qualquer |
-| **Caçar Leads** | Busca em DuckDuckGo/Bing via `server/hunt.ts`, extrai telefone/site, calcula score e confiança, importa os marcados |
+| **Caçar Leads** | Busca em DuckDuckGo/Bing via `server/hunt.ts`, extrai telefone/site, calcula score, exibe a confiança por resultado (alta/média/baixa) e, depois de importar, oferece "Ver N na carteira" |
 | **Resultados** | Funil por canal (telefone/WhatsApp/site/Instagram/e-mail), taxas por segmento, tudo calculado sobre eventos reais |
+| **Exportar** | CSV da seleção filtrada atual, com `;` e BOM — os cabeçalhos batem com os que o importador reconhece, então dá para exportar, editar e reimportar |
 
 ## Fluxo central
 
@@ -84,9 +85,12 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 31 casos de fluxo em `client/src/__tests__/`
-  (`flows.test.tsx` com happy-dom cobre as 6 abas, filtros, ficha, ações rápidas,
-  CSV e persistência; `api.test.ts` valida o contrato das rotas Express offline ou online).
+- **Testes:** `pnpm test` roda 34 casos em `client/src/__tests__/`
+  (`flows.test.tsx` com happy-dom cobre as 6 abas, filtros, ficha, ações rápidas, importar
+  e exportar CSV, follow-up e persistência; `api.test.ts` valida o contrato das rotas
+  Express offline ou online).
+- **Follow-up:** "Concluir" limpa a data, registra o evento e **não** move o estágio — avançar
+  no funil continua decisão explícita do vendedor (stepper ou select).
 - **Contato:** botão de WhatsApp gerado na hora como `https://wa.me/55+DDD+número` (telefone normalizado).
   E-mail e site aparecem no card do lead, mas **não** são clicáveis — não há `mailto:` nem link de site.
 - **Type-check:** `pnpm check` passa limpo (TypeScript `strict: true`, 0 erros).
