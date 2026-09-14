@@ -12,6 +12,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/pages/Home";
+import { parsePageFacts } from "@shared/research";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -343,6 +344,10 @@ describe("ações no card e funil", () => {
     expect(byText(".hunt-card .confidence", "confiança alta")).toBeTruthy();
     expect(byText(".hunt-card .confidence", "confiança média")).toBeTruthy();
     expect(text()).toContain("2 novas");
+    // regra nova: nada entra selecionado sozinho — o vendedor marca empresa por empresa
+    expect(text()).toContain("Adicionar selecionadas (0)");
+    await click(qa(".hunt-card input[type=\"checkbox\"]")[0]);
+    await click(qa(".hunt-card input[type=\"checkbox\"]")[1]);
     expect(text()).toContain("Adicionar selecionadas (2)");
 
     await click(q(".hunt-cta .dark-action"));
@@ -359,5 +364,98 @@ describe("ações no card e funil", () => {
     expect(qa(".opportunity-row").length).toBeGreaterThan(0);
     await click(byText(".view-switch button", "Encerradas"));
     expect(text()).toContain("Nada nesta visão");
+  });
+});
+
+/** fixture HTML lido pelo MESMO parser que roda no servidor */
+const SITE_HTML = `<html><head><title>Imóveis Belém</title><meta name="description" content="Corretora com apartamentos na Duque de Caxias."></head>
+<body><a href="https://instagram.com/imoveisbelem_oficial">insta</a><a href="tel:+5591984772865">(91) 98477-2865</a><a href="/contato">contato</a></body></html>`;
+const HUNT_RESULT = { id: "h1", name: "Refrigeração Exemplo", phone: "91999990000", whatsapp: "91999990000", site: "exemplo.com.br", segment: "refrigeração", location: "Belém", score: 78, opportunity: "catálogo com pedido direto", sourceUrl: "https://exemplo.com.br", sourceTitle: "site da empresa", confidence: "alta" };
+
+function stubRoutes(routes: Record<string, unknown>) {
+  const spy = vi.fn(async (input: unknown) => {
+    const url = String(typeof input === "string" ? input : (input as { url: string }).url);
+    const match = Object.entries(routes).find(([key]) => url.includes(key));
+    if (!match) throw new Error(`rota não stubada: ${url}`);
+    return { ok: true, status: 200, json: async () => match[1] } as unknown as Response;
+  });
+  vi.stubGlobal("fetch", spy);
+  return spy;
+}
+
+describe("caça com ações por empresa (nada entra sozinho)", () => {
+  it("mantém a seleção vazia, oferece as 3 ações e adiciona uma por uma", async () => {
+    stubRoutes({ "/api/hunt-leads": { results: [HUNT_RESULT] }, "/api/research": { record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: "abc", sources: [], signals: [], opportunities: [], facts: parsePageFacts(SITE_HTML, "https://exemplo.com.br") } } });
+    await tab("Caçar Leads");
+    await act(async () => { q(".hunt-form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+    expect(qa(".hunt-card").length).toBe(1);
+    // regra: resultado nenhum é adicionado à carteira por conta própria
+    expect(text()).not.toContain("Refrigeração Exemplo adicionada");
+    const addSelected = byText(".hunt-cta button", "Adicionar selecionadas") as HTMLButtonElement;
+    expect(addSelected.disabled).toBe(true);
+    expect((q(".hunt-actions") as HTMLElement).textContent).toContain("Pesquisar");
+    expect((q(".hunt-actions") as HTMLElement).textContent).toContain("Adicionar aos Leads");
+    expect((q(".hunt-actions button:nth-child(3)") as HTMLButtonElement).disabled).toBe(false);
+    await click(q(".hunt-actions button")); // Pesquisar a empresa antes de decidir
+    expect((q(".hunt-actions small") as HTMLElement).textContent).toMatch(/score|dado\(s\)/);
+    await click(q(".hunt-actions button:nth-child(2)")); // Adicionar aos Leads
+    await tab("Leads");
+    expect(text()).toContain("Refrigeração Exemplo");
+    expect(text()).toContain("de 158"); // 157 + a que eu escolhi
+  });
+  it("abre o WhatsApp do caçado com a mensagem gerada, sem criar lead", async () => {
+    stubRoutes({ "/api/hunt-leads": { results: [HUNT_RESULT] } });
+    await tab("Caçar Leads");
+    await act(async () => { q(".hunt-form")?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })); });
+    await click(q(".hunt-actions button:nth-child(3)"));
+    const open = window.open as unknown as ReturnType<typeof vi.fn>;
+    expect(open).toHaveBeenCalledTimes(1);
+    const target = String(open.mock.calls[0][0]);
+    expect(target.startsWith("https://wa.me/5591999990000?text=")).toBe(true);
+    expect(decodeURIComponent(target)).toMatch(/Refrigeração Exemplo/);
+    await tab("Leads");
+    expect(text()).toContain("de 157");
+  });
+});
+
+describe("pesquisa aplicada na ficha do lead", () => {
+  async function openLeadWithSite() {
+    await tab("Leads");
+    await setInput(q(".search-field input"), "Skye");
+    await click(q(".lead-card .more-button"));
+  }
+  it("mostra DADOS ENCONTRADOS separados da INTERPRETAÇÃO e aproveita só o que falta", async () => {
+    stubRoutes({ "/api/research": { record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: "hash-1", signals: ["Instagram @imoveisbelem_oficial linkado"], opportunities: ["catálogo com pedido direto"], sources: [{ id: "s1", claim: "conteúdo público", sourceUrl: "https://x", sourceType: "website", sourceTitle: "Imóveis Belém", retrievedAt: "2026-09-13", confidence: "alta" }], facts: parsePageFacts(SITE_HTML, "https://www.imoveisbelem.belem.br") } } });
+    await openLeadWithSite();
+    expect(text()).toContain("Nada foi pesquisado ainda");
+    await click(byText(".research-callout button", "Pesquisar empresa"));
+    expect(text()).toContain("DADOS ENCONTRADOS");
+    expect(text()).toContain("INTERPRETAÇÃO COMERCIAL");
+    expect(text()).toContain("MOTIVOS DO SCORE");
+    expect(text()).toContain("não verificado"); // o estado de quem não foi lido, visível
+    // telefone/instagram já cadastrados continuam os mesmos, não foram sobrescritos
+    expect(q(".rp-panel")?.textContent).toContain("não indicado na página");
+    await unmount();
+    await render();
+    await openLeadWithSite();
+    expect(text()).toContain("DADOS ENCONTRADOS"); // persistiu: a ficha não relê o site
+  });
+  it("gera, deixa editar e usa o texto editado ao abrir o WhatsApp", async () => {
+    stubRoutes({ "/api/research": { record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: "h", signals: [], opportunities: [], sources: [], facts: parsePageFacts(SITE_HTML, "https://www.imoveisbelem.belem.br") } } });
+    await openLeadWithSite();
+    await click(byText(".research-callout button", "Pesquisar empresa"));
+    const area = q(".rp-text") as HTMLTextAreaElement;
+    expect(area.value.length).toBeGreaterThan(40);
+    const generated = area.value;
+    await click(byText(".rp-styles button", "Direta"));
+    expect((q(".rp-text") as HTMLTextAreaElement).value).not.toBe(generated);
+    await setInput(area, "Texto meu revisado antes de enviar.");
+    expect((q(".rp-text") as HTMLTextAreaElement).value).toBe("Texto meu revisado antes de enviar.");
+    expect(q(".rp-usage")?.textContent).toContain("restaurar texto gerado");
+    await click(byText(".rp-actions button", "Abrir WhatsApp"));
+    const open = window.open as unknown as ReturnType<typeof vi.fn>;
+    expect(decodeURIComponent(String(open.mock.calls.at(-1)?.[0] ?? ""))).toContain("Texto meu revisado antes de enviar.");
+    await click(q(".detail-actions .whatsapp-button"));
+    expect(decodeURIComponent(String(open.mock.calls.at(-1)?.[0] ?? ""))).toContain("Texto meu revisado antes de enviar.");
   });
 });

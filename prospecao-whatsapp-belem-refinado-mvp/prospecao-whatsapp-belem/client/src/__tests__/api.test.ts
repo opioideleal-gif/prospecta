@@ -81,10 +81,14 @@ describe("POST /api/research", () => {
     expect(body.record).toBeNull();
     expect(body.reason).toMatch(/Nenhum site/);
   });
-  it("falha de forma previsível quando a fonte não responde", async () => {
+  it("fonte que não responde vira registro honesto, não afirmação de ausência", async () => {
     const response = await post("/api/research", { id: `inexistente-${Date.now()}`, name: "Domínio Morto", site: "dominio-que-nao-existe-9f8a7b.example" });
-    expect(response.status).toBe(502);
-    expect((await response.json()).error).toBeTruthy();
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    expect(body.record.facts.fetchOk).toBe(false);
+    // nada pode ser reportado como "não tem": tudo fica "unknown" e sem evidência
+    expect(Object.values(body.record.facts.presence).every((probe: { state: string }) => probe.state === "unknown")).toBe(true);
+    expect(body.record.signals ?? []).toEqual([]);
   });
   it("GET /api/research/:leadId devolve null para lead nunca pesquisado", async () => {
     const response = await get(`/api/research/nunca-pesquisado-${Date.now()}`);
