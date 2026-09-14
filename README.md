@@ -87,6 +87,14 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
 - `parsePageFacts` é a **única** coisa que lê HTML, e é pura: sem rede, testável, usada igual pelo
   servidor e pelos testes. Ela nunca escreve `absent` para uma página que não respondeu —
   nesses casos tudo fica `unknown`, então "o site não existe" é estruturalmente impossível.
+- O parser é calibrado para as formas de site que existem aqui, com **guardas contra falso
+  positivo** (cada uma tem fixture próprio em `pipeline.test.ts`): a palavra `Menu` da navegação
+  **não** conta como catálogo — senão quase todo site ganharia o `+9` e perderia o gancho de
+  "mostrar o que vende"; `api.whatsapp.com/send?phone=`, `wa.link/` e `whatsapp://send` contam como
+  canal (só `wa.me` deixaria de fora a maioria das PMEs); preço (`R$ 89,90`) e `add-to-cart` em
+  classe de botão identificam catálogo/venda online de Nuvemshop/Shopify/WooCommerce; telefone
+  embutido em payload de SPA (`__NEXT_DATA__`) só é lido quando está atribuído a uma chave de
+  contato — o que mantém CNPJ e CEP fora de `phones`.
 - `buildApproaches` só monta frase a partir de campo que existe. O que falta não aparece na
   mensagem e vai para a lista `de fora:` do painel, para você auditar o que foi deixado de lado.
 - A **análise alimenta o script**: `contextFromLead` dá precedência ao que a leitura produziu
@@ -130,10 +138,10 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 79 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 86 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
-  estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura; `flows.test.tsx` (happy-dom) cobre
+  estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
   as 6 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload;
   `api.test.ts` valida o contrato das rotas Express.
 - **Follow-up:** "Concluir" limpa a data, registra o evento e **não** move o estágio — avançar

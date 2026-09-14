@@ -91,6 +91,77 @@ describe("1. pesquisa devolve só o que a página tem, organizado por grupo", ()
   });
 });
 
+const WP_HTML = `<html><head><title>Refrigeração Norte | Belém</title></head><body>
+<header><nav><a href="/">Início</a><a>Menu</a><a href="/servicos">Serviços</a><a href="/contato">Contato</a></nav></header>
+<h2>Instalação de ar condicionado split</h2><h2>Manutenção preventiva</h2>
+<footer><a href="tel:+559132415566">(91) 3241-5566</a><a href="https://api.whatsapp.com/send?phone=5591999990000&text=Ol%C3%A1"><i class="icon-whatsapp"></i></a>
+<p>CNPJ 11.222.333/0001-44 · CEP 66053-190</p></footer></body></html>`;
+const STORE_HTML = `<html><head><title>Loja Aurora</title></head><body>
+<div class="nsapp-product-list"><a href="/produto/camiseta-polo">Camiseta Polo</a><span>R$ 89,90</span>
+<button class="ns-product-add-to-cart">Adicionar à sacola</button></div>
+<footer>Checkout seguro · Nuvemshop · pagamento via Mercado Pago</footer></body></html>`;
+const BIO_HTML = `<html><head><title>Açaí do Belém</title><meta property="og:description" content="Peça pelo direct ou pelo link abaixo."></head>
+<body><h1>Açaí do Belém</h1><a href="https://instagram.com/acaidobelem">@acaidobelem</a><a href="https://wa.link/9f2k1a">Pedir agora</a></body></html>`;
+const SPA_HTML = `<html><head><title>Studio Cordel</title></head><body><div id="__next"></div>
+<script id="__NEXT_DATA__" type="application/json">{"props":{"pageProps":{"contact":{"phone":"+55 91 98123-4567","whatsapp":"5591981234567"},"catalog":[{"name":"Ensaio externo"},{"name":"Book impresso"}]}}}</script>
+</body></html>`;
+
+describe("1b. o parser encara as formas reais de site (WordPress, Nuvemshop, bio de Instagram, SPA)", () => {
+  const wp = parsePageFacts(WP_HTML, "https://nortear.com.br");
+  it("“Menu” da navegação não é catálogo — senão todo site ganharia o gancho errado", () => {
+    expect(wp.presence.catalog.state).toBe("absent");
+    expect(wp.presence.ecommerce.state).toBe("absent");
+    // e a oportunidade certa (mostrar o que vende) continua disponível
+    expect(buildResearchRecord(wp, { name: "Refrigeração Norte" }).opportunities).toContain("cardápio/catálogo digital");
+  });
+  it("reconhece api.whatsapp.com/send?phone= e guarda o link como evidência", () => {
+    expect(wp.presence.whatsapp.state).toBe("found");
+    expect(wp.presence.whatsapp.evidence).toMatch(/api\.whatsapp\.com\/send/);
+  });
+  it("não confunde CNPJ e CEP com telefone", () => {
+    expect(wp.phones).toEqual(["559132415566"]);
+    expect(wp.phones.every((n) => /^55\d{10,11}$/.test(n))).toBe(true);
+  });
+  it("loja com preço e add-to-cart é lida como catálogo + venda online", () => {
+    const loja = parsePageFacts(STORE_HTML, "https://lojaaurora.com.br");
+    expect(loja.presence.catalog.state).toBe("found");
+    expect(loja.presence.ecommerce.state).toBe("found");
+    const interpretation = interpretLead({ name: "Loja Aurora", segment: "Distribuidoras" }, loja)!;
+    expect(interpretation.headline).toMatch(/venda online já no site/);
+    expect(interpretation.detectedProblems.join(" ")).not.toMatch(/venda online/);
+  });
+  it("landing que só existe no Instagram não gera mensagem com número inventado", () => {
+    const bio = parsePageFacts(BIO_HTML, "https://acaidobelem.page");
+    expect(bio.presence.instagram.state).toBe("found");
+    expect(bio.presence.whatsapp.state).toBe("found");
+    expect(bio.phones).toEqual([]);
+    const merged = { name: "Açaí do Belém", segment: "Serviços", location: "Belém - PA", phone: "", score: 60, facts: bio };
+    const text = buildApproaches(contextFromLead(merged as never))[0].text;
+    expect(text).toMatch(/responde por aqui/);
+    expect(text).not.toMatch(/wa\.me|Pedir agora|link de pedido/i); // CTA da página não vira dado do lead
+  });
+  it("telefone guardado no JSON do SPA entra na análise (e a mensagem só usa o que foi lido)", () => {
+    const spa = parsePageFacts(SPA_HTML, "https://studiocordel.com");
+    expect(spa.phones).toEqual(["5591981234567"]);
+    expect(spa.presence.whatsapp.state).toBe("found");
+    const { patch } = leadPatchFromResearch({ phone: "" }, spa);
+    expect(patch.phone).toBe("91981234567");
+    expect(`https://wa.me/${toWhatsAppNumber(patch.phone)}`).toBe("https://wa.me/5591981234567");
+  });
+});
+
+describe("2a. achar um contato que faltava conta no score, e conta uma vez só", () => {
+  const wpFacts = parsePageFacts(WP_HTML, "https://nortear.com.br");
+  it("o mérito é medido contra o lead antes do patch, não depois", () => {
+    const before = { score: 60, site: "nortear.com.br", pain: "A investigar" };
+    const after = { ...before, phone: "9132415566" };
+    expect(evidenceScore(after, wpFacts).deltas.some((d) => /telefone encontrado/.test(d.label))).toBe(false);
+    const scored = evidenceScore(after, wpFacts, before);
+    expect(scored.deltas.some((d) => /telefone encontrado na pesquisa \(559132415566\)/.test(d.label))).toBe(true);
+    expect(scored.deltas.filter((d) => /telefone encontrado/.test(d.label))).toHaveLength(1);
+  });
+});
+
 describe("2. dados pesquisados viram campos do lead sem destruir o cadastro", () => {
   const facts = parsePageFacts(HOME_HTML, URL);
   it("preenche apenas o que estava vazio", () => {

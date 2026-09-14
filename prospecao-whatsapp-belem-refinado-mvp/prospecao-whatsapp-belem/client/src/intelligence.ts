@@ -155,7 +155,7 @@ export function interpretLead(lead: { name: string; segment?: string; city?: str
         : "aproveitar o tráfego que já existe no Instagram";
 
   return {
-    headline: `${who}${parts.length ? parts.join(", ") : "site institucional sem elementos comerciais identificáveis"}${missing.length ? `, porém sem ${missing.join(" e sem ")}` : ""}.`,
+    headline: `${who}${parts.length ? parts.join(", ") : "site institucional sem elementos comerciais identificáveis"}${missing.length ? `, porém sem ${missing.length === 1 ? missing[0] : `${missing.slice(0, -1).join(", ")} e ${missing[missing.length - 1]}`}` : ""}.`,
     opportunity,
     detectedProblems: missing.map((m) => `possível ganho em ${m}`),
     factsUsed: verifiedFacts(facts),
@@ -167,7 +167,13 @@ export function interpretLead(lead: { name: string; segment?: string; city?: str
 
 /** Score heurístico + ajustes por evidência. Cada ajuste diz de onde veio, então o
  *  "por quê" mostrado na tela é literalmente o cálculo. */
-export function evidenceScore(lead: { score?: number; scoreBase?: number; phone?: string; email?: string; site?: string; pain?: string }, facts?: PageFacts) {
+export function evidenceScore(
+  lead: { score?: number; scoreBase?: number; phone?: string; email?: string; site?: string; pain?: string },
+  facts?: PageFacts,
+  /** o lead como era antes de receber os dados da pesquisa: o mérito de "achamos um contato
+   *  que faltava" só existe comparado com esse estado, não com o lead já preenchido */
+  had?: { phone?: string; email?: string; site?: string },
+) {
   // A base é o score ANTES de qualquer evidência: reler o site recomputa os mesmos deltas
   // em vez de somar os antigos de novo (sem isso, cada clique em "Reler" inflamava o score).
   const base = Math.max(35, Math.min(98, lead.scoreBase ?? lead.score ?? 60));
@@ -188,7 +194,10 @@ export function evidenceScore(lead: { score?: number; scoreBase?: number; phone?
   if (has(facts.presence.catalog) && !has(facts.presence.ecommerce)) push("mostra o produto mas não vende online", 9, facts.presence.catalog.evidence);
   if (has(facts.presence.ecommerce)) push("e-commerce ativo: ticket recorrente", 4);
   if (facts.address) push("endereço físico publicado", 4);
-  if ((facts.phones?.length ?? 0) > 0 && !lead.phone) push(`telefone encontrado na pesquisa (${facts.phones![0]})`, 7);
+  // comparado com o estado ANTES da pesquisa: com `had` informado, o lead já preenchido
+  // não apaga o mérito de termos achado o contato que faltava
+  const phoneBefore = (had ?? lead).phone;
+  if ((facts.phones?.length ?? 0) > 0 && !phoneBefore) push(`telefone encontrado na pesquisa (${facts.phones![0]})`, 7);
   if (facts.description) push("autodescrição clara no site", 3);
   if ((facts.services?.length ?? 0) >= 2) push(`${facts.services!.length} serviços declarados`, 5);
   if (has(facts.presence.recentContent)) push("conteúdo com data visível no site", 3);

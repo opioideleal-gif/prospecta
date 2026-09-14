@@ -3,10 +3,15 @@
  * Testes de contrato do backend (Express).
  *
  * Escritos para passar tanto offline quanto online: onde houver rede, as rotas de
- * busca/pesquisa respondem 200 com resultados; onde não houver, respondem 502 com
- * `error`. O que importa aqui é o contrato — parâmetros obrigatórios, formato da
- * resposta e persistência — e isso não muda com a rede.
+ * busca/pesquisa respondem 200 com resultados; onde não houver, /api/research responde
+ * 200 com um registro honesto (`facts.fetchOk: false`, tudo `unknown`) em vez de erro —
+ * porque "não consegui ler" é um resultado. O que importa aqui é o contrato: parâmetros
+ * obrigatórios, formato da resposta e persistência. O estado vai para um diretório
+ * temporário, para não sujar o .data/prospecta.json de quem desenvolve.
  */
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 
 const PORT = 43911;
@@ -21,6 +26,7 @@ const post = (path: string, body: unknown) =>
 beforeAll(async () => {
   process.env.PORT = String(PORT);
   process.env.NODE_ENV = "test";
+  process.env.PROSPECTA_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), "prospecta-test-"));
   await import("../../../server/index.js");
   for (let attempt = 0; attempt < 60; attempt++) {
     try {

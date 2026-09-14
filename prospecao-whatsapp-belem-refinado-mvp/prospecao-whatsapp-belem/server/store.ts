@@ -6,7 +6,9 @@ export type Evidence = { id: string; claim: string; sourceUrl: string; sourceTyp
 export type ResearchRecord = { lastResearchAt: string; researchHash: string; sources: Evidence[]; signals: string[]; opportunities: string[]; facts?: PageFacts; unverified?: string[]; summary?: string; headline?: string };
 export type ProspectaState = { companies: unknown[]; contacts: unknown[]; leads: unknown[]; opportunities: unknown[]; services: unknown[]; activities: unknown[]; notes: unknown[]; followUps: unknown[]; messages: unknown[]; pipelineStages: unknown[]; research: Record<string, ResearchRecord>; scores: unknown[] };
 
-const dataPath = path.resolve(process.cwd(), ".data", "prospecta.json");
+// PROSPECTA_DATA_DIR permite isolar o arquivo (usado pelos testes de contrato, para
+// não gravar estado de teste no .data/prospecta.json de quem está desenvolvendo)
+const dataPath = path.resolve(process.env.PROSPECTA_DATA_DIR || path.join(process.cwd(), ".data"), "prospecta.json");
 const emptyState: ProspectaState = { companies: [], contacts: [], leads: [], opportunities: [], services: [], activities: [], notes: [], followUps: [], messages: [], pipelineStages: [], research: {}, scores: [] };
 
 export async function readState(): Promise<ProspectaState> { try { return { ...emptyState, ...JSON.parse(await fs.readFile(dataPath, "utf8")) }; } catch { return emptyState; } }

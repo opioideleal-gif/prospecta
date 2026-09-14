@@ -68,7 +68,8 @@ function withStoredEvidence(lead: Lead): Lead {
   const merged = { ...lead, ...patch, facts } as Lead;
   const interpretation = lead.interpretation ?? interpretLead(merged, facts);
   if (lead.scoreDeltas) return { ...merged, interpretation };
-  const scored = evidenceScore(merged, facts);
+  // o estado "antes" é o próprio lead cru: foi ele que a pesquisa completou
+  const scored = evidenceScore(merged, facts, lead);
   return { ...merged, interpretation, score: scored.score, scoreBase: scored.base, scoreDeltas: scored.deltas };
 }
 
@@ -199,7 +200,7 @@ const row = rows.slice(1)[index]; const name = find(row, ["empresa", "nome", "ra
     const { patch, added, preserved, ignored } = leadPatchFromResearch(lead, effective, researchedAt);
     const merged = { ...lead, ...patch } as Lead;
     const interpretation = interpretLead(merged, effective);
-    const scored = evidenceScore(merged, effective);
+    const scored = evidenceScore(merged, effective, lead);
     const signals = (record.signals as string[] | undefined) ?? [];
     const opportunities = (record.opportunities as string[] | undefined) ?? [];
     const sources = (record.sources as ResearchSummary["sources"] | undefined) ?? [];

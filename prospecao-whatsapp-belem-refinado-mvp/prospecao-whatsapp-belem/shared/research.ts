@@ -60,9 +60,13 @@ export type PageFacts = {
 
 const PHONE_RE = /(?:\+?55[\s.-]?)?(?:\(?0?\d{2}\)?[\s.-]?)?9?\d{4}[\s.-]?\d{4}/g;
 const SOCIAL_RE = /https?:\/\/(?:www\.)?(instagram|facebook|youtube|linkedin|tiktok)\.com\/[^\s"'<>\\]+/gi;
-const CATALOG_RE = /(card[aá]pio|cat[aá]logo|menu|tabela de pre[cç]os|lista de produtos|nossos servi[cç]os)/i;
-const COMMERCE_RE = /(carrinho|comprar|adicionar ao carrinho|checkout|loja virtual|e-?commerce|shopify|magento|woocommerce|opencart|nubina|yampi|mercadopago|mercado livre|pagseguro)/i;
-const WHATSAPP_LINK_RE = /((?:api\.)?wa\.me\/\d+|web\.whatsapp\.com\/send|chatwhatsapp|whatsapp-client|wa\.cli\.ee)/i;
+// "Menu" aparece na navegação de qualquer site: sozinho ele NÃO é catálogo.
+const CATALOG_RE = /(card[aá]pio|cat[aá]logo|tabela de pre[cç]os|lista de produtos|produtos e servi[cç]os|nossos servi[cç]os|vitrine|menu (?:digital|de (?:produtos|servi[cç]os|pratos|bebidas|pre[cç]os))|pre[cç]o: ?R\$|R\$ ?\d[\d.,]*)/i;
+// estrutura de vitrine costuma morar em classes/attrs, não no texto visível
+const CATALOG_MARKUP_RE = /(product-list|product-grid|nsapp-product|woocommerce-loop|products-slider|itemtype=["']https?:\/\/schema\.org\/Product)/i;
+const COMMERCE_RE = /(carrinho|comprar agora|adicionar (?:ao carrinho|[aà] sacola)|checkout|loja virtual|e-?commerce|finalizar compra|pagamento (?:online|seguro)|mercado pago|pagseguro|mercadolivre|mercado livre)/i;
+const COMMERCE_PLATFORM_RE = /(cdn\.shopify|myshopify|nuvemshop|cartpanda|yampi|vtex|opencart|magento|woocommerce|add[-_ ]to[-_ ]cart|\/cart\b|\/checkout\/)/i;
+const WHATSAPP_LINK_RE = /(wa\.me\/\d+|api\.whatsapp\.com\/send|web\.whatsapp\.com\/send|whatsapp:\/\/send|wa\.link\/|chatwhatsapp|whatsapp-client|wa\.cli\.ee|(?:href|src|content|data-[a-z-]+)=["'][^"']*whatsapp[^"']*(?:phone=|\d{10,})[^"']*["'])/i;
 const CONTACT_LINK_RE = /href=["']([^"']*(?:contato|fale-conosco|faleconosco|contact)[^"']*)["']/i;
 const SERVICE_HEADING_RE = /(manuten|repara|instala|assist[eê]ncia|consultoria|projeto|reforma|laudo|per[íi]cia|limpeza|pintura|loca[çc][aã]o|venda|entrega|atendimento|aula|curso|servi[çc]o|card[aá]pio|buf[eê]|eventos|obra|caldeiraria|montagem|vistoria|projetos)/i;
 
@@ -131,6 +135,11 @@ function phonesIn(html: string): string[] {
     const n = toWhatsAppNumber(tel[1]);
     if (n.length >= 12) numbers.add(n);
   }
+  // dados de SPA ficam em JSON embutido: só aceitamos número atribuído a uma chave de contato
+  for (const json of html.matchAll(/["'](phone|telefone|whatsapp|celular|fone|contato_telefone|mobile)\s*["']?\s*[:=]\s*["']?([+\d][\d\s().-]{8,20})/gi)) {
+    const n = toWhatsAppNumber(json[2]);
+    if (n.length >= 12 && n.length <= 13) numbers.add(n);
+  }
   const text = cleanText(html.replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<[^>]+>/g, " "), 20000);
   for (const raw of text.match(PHONE_RE) || []) {
     const n = toWhatsAppNumber(raw);
@@ -180,6 +189,13 @@ export function parsePageFacts(html: string, url: string, options: { httpStatus?
   const lastContentDate = metaAll(html, "og:updated_time") || metaAll(html, "article:modified_time") || metaAll(html, "article:published_time") || nodes.map((n) => (typeof n.dateModified === "string" ? n.dateModified : typeof n.datePublished === "string" ? n.datePublished : "")).filter(Boolean)[0];
   const schemaTypes = [...new Set(nodes.flatMap((n) => asArray(n["@type"])).map((t) => String(t)))];
   const contactHref = html.match(CONTACT_LINK_RE)?.[1];
+  // texto visível E atributos de markup: em WordPress/Elementor/Nuvemshop o sinal costuma
+  // estar na classe do botão, não na palavra escrita
+  const catalogHit = text.match(CATALOG_RE)?.[0] || html.match(CATALOG_MARKUP_RE)?.[0];
+  const commerceHit = text.match(COMMERCE_RE)?.[0] || html.match(COMMERCE_PLATFORM_RE)?.[0];
+  const whatsappHit = html.match(WHATSAPP_LINK_RE)?.[0]
+    || /["']whatsapp["']\s*[:=]\s*["']?(?:\+?\d{10,13}|https?:[^\s"']*)/i.exec(html)?.[0]
+    || (/whatsapp/i.test(text) ? "menção escrita a WhatsApp" : undefined);
   // REGRA ABSOLUTA: se o conteúdo não chegou, nada pode ser marcado como "não tem".
   // A tentativa fracassada produz `unknown` em toda a presença digital.
   const fetchOk = options.fetchOk ?? (html.trim().length > 0 && (options.httpStatus === undefined || options.httpStatus < 400));
@@ -189,9 +205,9 @@ export function parsePageFacts(html: string, url: string, options: { httpStatus?
     ? { site: notRead(), catalog: notRead(), ecommerce: notRead(), whatsapp: notRead(), instagram: notRead(), facebook: notRead(), contactLink: notRead(), recentContent: notRead(), searchListing: unknown("exige consulta a buscador") }
     : {
     site: found(`título: “${title || hostOf(url)}”`, url),
-    catalog: probe(CATALOG_RE, text, "menção a catálogo/cardápio", url),
-    ecommerce: probe(COMMERCE_RE, text, "indício de venda online", url),
-    whatsapp: WHATSAPP_LINK_RE.test(html) || /whatsapp/i.test(text) ? found(`link/fala sobre WhatsApp em ${label}`, url) : absent("sem menção a WhatsApp"),
+    catalog: catalogHit ? found(`${label} mostra material de venda: “${cleanText(catalogHit, 44)}”`, url) : absent("nenhum catálogo/cardápio na página lida"),
+    ecommerce: commerceHit ? found(`${label} indica venda online: “${cleanText(commerceHit, 44)}”`, url) : absent("nenhuma venda online na página lida"),
+    whatsapp: whatsappHit ? found(`canal de WhatsApp: “${cleanText(whatsappHit, 52)}”`, url) : absent("nenhum link de WhatsApp na página lida"),
     instagram: instagram ? found(`perfil ${instagram} linkado`, url) : absent("sem link de Instagram"),
     facebook: facebook ? found(`perfil ${facebook} linkado`, url) : absent("sem link de Facebook"),
     contactLink: contactHref ? found(`página de contato em ${contactHref}`, url) : absent("sem link de contato"),
