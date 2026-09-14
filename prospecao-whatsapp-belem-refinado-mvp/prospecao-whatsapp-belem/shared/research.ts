@@ -200,7 +200,7 @@ export function parsePageFacts(html: string, url: string, options: { httpStatus?
   // A tentativa fracassada produz `unknown` em toda a presença digital.
   const fetchOk = options.fetchOk ?? (html.trim().length > 0 && (options.httpStatus === undefined || options.httpStatus < 400));
   const unread = !fetchOk;
-  const notRead = () => unknown(`${label} não foi lido (${options.httpStatus ? `HTTP ${options.httpStatus}` : "sem resposta"}) — não é possível afirmar ausência`);
+  const notRead = () => unknown(`${label} não foi lida (${options.httpStatus ? `HTTP ${options.httpStatus}` : "sem resposta"}) — não é possível afirmar ausência`);
   const presence: PresenceMap = unread
     ? { site: notRead(), catalog: notRead(), ecommerce: notRead(), whatsapp: notRead(), instagram: notRead(), facebook: notRead(), contactLink: notRead(), recentContent: notRead(), searchListing: unknown("exige consulta a buscador") }
     : {

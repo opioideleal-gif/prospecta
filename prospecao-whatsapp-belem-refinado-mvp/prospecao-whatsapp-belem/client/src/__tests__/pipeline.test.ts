@@ -36,6 +36,14 @@ const Clinic_HTML = `<html><head><title>Clínica Vida Belém | Odontologia</titl
 
 describe("1. pesquisa devolve só o que a página tem, organizado por grupo", () => {
   const facts = parsePageFacts(HOME_HTML, URL);
+  it("quando a página não respondeu, a evidência diz isso em português e não afirma ausência", () => {
+    const dead = parsePageFacts("", "https://padariateste.com.br", { httpStatus: 0, pageLabel: "página inicial", fetchOk: false });
+    expect(dead.presence.catalog.evidence).toMatch(/^página inicial não foi lida \(sem resposta\)/); // concordância: é A página
+    expect(dead.presence.catalog.evidence).toMatch(/não é possível afirmar ausência/);
+    expect(dead.presence.searchListing.state).toBe("unknown");
+    expect(buildResearchRecord(dead, { name: "Padaria Teste" }).opportunities).toEqual([]);
+  });
+
   it("a segunda página é opcional: ler só a home não quebra nem inventa", () => {
     const home = parsePageFacts(HOME_HTML, URL);
     expect(mergeFacts(home)).toEqual(home); // sem /contato lida, os fatos ficam exatamente como estão

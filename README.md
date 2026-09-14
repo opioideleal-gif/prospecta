@@ -174,7 +174,7 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 104 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 105 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
