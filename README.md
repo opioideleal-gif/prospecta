@@ -92,6 +92,12 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
   apareceu no resultado de busca, isso é fato, com `provider` + `query` + `sourceUrl` como evidência,
   e vale `+2` no score. A leitura pelo botão da ficha continua marcando o item como não verificado —
   ninguém finge que procurou no buscador.
+- Quem vem da caça carrega também a **fonte da busca** como linha de evidência no lead
+  (`A empresa aparece no resultado de busca pública para “refrigeração Belém”` + `sourceUrl` +
+  confiança do resultado) — a ficha mostra isso em `FATO PESQUISADO`, então dá para auditar de onde
+  saiu cada dado antes de abordar.
+- Ao corrigir maiúscula de frase, o gerador **não toca em texto citado** do site do lead
+  (descrição, nota, heading): ele sai da string, é capitalizado em volta e volta byte por byte.
 - O parser é calibrado para as formas de site que existem aqui, com **guardas contra falso
   positivo** (cada uma tem fixture próprio em `pipeline.test.ts`): a palavra `Menu` da navegação
   **não** conta como catálogo — senão quase todo site ganharia o `+9` e perderia o gancho de
@@ -143,7 +149,7 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 88 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 89 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre

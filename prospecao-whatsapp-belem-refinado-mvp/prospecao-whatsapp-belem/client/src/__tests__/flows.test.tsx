@@ -407,6 +407,8 @@ describe("caça com ações por empresa (nada entra sozinho)", () => {
     const google = qa(".rp-row").find((row) => (row.textContent || "").startsWith("Listagem no Google"));
     expect(google?.textContent).toContain("encontrado");
     expect(google?.textContent).toMatch(/refrigeração Belém/);
+    // a fonte da caça vira linha de evidência no lead, com o provedor e a consulta
+    expect(qa(".evidence-row").some((row) => /resultado de busca pública/.test(row.textContent || ""))).toBe(true);
     await click(q(".modal-close"));
     expect(text()).toContain("de 158"); // 157 + a que eu escolhi
   });

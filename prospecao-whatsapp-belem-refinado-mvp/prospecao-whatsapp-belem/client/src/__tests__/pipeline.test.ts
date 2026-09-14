@@ -376,6 +376,16 @@ describe("6-9. abordagem usa só campos que existem, com 3 estilos e um objetivo
     const hit = bare.find((a) => /De modo geral/.test(a.text));
     expect(hit?.usedFacts.join(" ")).toMatch(/heurística, não confirmada/);
   });
+  it("não reescreve texto citado do site do lead ao ajustar maiúsculas", () => {
+    const quote = "atendemos das 7h às 18h. pedidos por whatsapp e balcão";
+    const quoted = buildApproaches({ companyName: "Padaria Pão Quente", segment: "Serviços", city: "Belém - PA", objective: "Catálogo digital", description: quote });
+    const withQuote = quoted.filter((a) => a.text.includes("atendemos das 7h"));
+    expect(withQuote.length).toBeGreaterThan(0);
+    for (const a of withQuote) {
+      expect(a.text).toContain(`“${quote}”.`); // o "p" minúsculo dentro da citação fica como está na fonte
+      expect(a.text).toMatch(/[.!?] [A-ZÀ-Ú]/); // e a frase NOSSA, que vem depois, começa em maiúscula
+    }
+  });
   it("frases sempre começam em maiúscula e terminam com ponto", () => {
     for (const a of forObjective("Automação")) {
       expect(a.text).toMatch(/^[A-ZÁÀÂÉÊÍÓÔÕÚÇ]/);

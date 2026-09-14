@@ -213,12 +213,22 @@ function noteSentence(ctx: ApproachContext): Sentence {
 }
 
 function join(parts: (string | Sentence | undefined)[]) {
-  const sentences = parts.map((part) => (typeof part === "string" ? part : part?.text)).filter((p): p is string => Boolean(p && p.trim()));
-  return sentences
+  const sentences = parts
+    .map((part) => (typeof part === "string" ? part : part?.text))
+    .filter((p): p is string => Boolean(p && p.trim()))
+    // trecho nosso que termina sem pontuação ganha ponto; texto do lead não é editado aqui
     .map((s) => (/[.!?…]$/.test(s.trim()) ? s.trim() : `${s.trim()}.`))
-    // trecho que entra minúsculo dentro de outra frase não pode virar frase começando pequena
-    .join(" ")
-    .replace(/(^|[.!?]\s)([a-zà-ú])/g, (_m, sep, ch) => `${sep}${ch.toUpperCase()}`);
+    .join(" ");
+  // maiúscula no começo de frase vale para o QUE NÓS ESCREVEMOS. Span entre aspas é texto do
+  // site do lead (descrição, nota, heading): sai, é capitalizado em volta, e volta igual.
+  const quoted: string[] = [];
+  return sentences
+    .replace(/(["“][^"”\n]+[”"])/g, (m) => {
+      quoted.push(m);
+      return `\u0000${quoted.length - 1}\u0000`;
+    })
+    .replace(/(^|[.!?]\s)([a-zà-ú])/g, (_m, sep, ch) => `${sep}${ch.toUpperCase()}`)
+    .replace(/\u0000(\d+)\u0000/g, (_m, i) => quoted[Number(i)] ?? "");
 }
 
 export function buildApproaches(ctx: ApproachContext): GeneratedApproach[] {
