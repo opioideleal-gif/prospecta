@@ -101,6 +101,11 @@ O trecho **pesquisar → analisar → script** é um pipeline de dados, não tr�
   afirmação sobre a empresa. Detectado da oportunidade, pode ser trocado na ficha e no Playbook.
 - O estágio do funil + o histórico escolhem o enquadramento: quem já respondeu recebe
   "pegando o gancho do que vocês me responderam", quem está encerrado recebe um texto sem oferta.
+- **Hidratação em um ponto só:** `withStoredEvidence` reconstrói campos vazios, interpretação,
+  `scoreBase` e deltas a partir dos fatos guardados no lead (ou no registro de pesquisa), então
+  lista, ficha, score e mensagem nunca discordam depois de um reload — e abrir a ficha não dispara
+  leitura nenhuma. No card, o score ganha o rótulo de procedência (`com evidência (70→88)`,
+  `lido, sem mudança no score`, `fonte não respondeu`, `só o cadastro`) com os deltas no `title`.
 - **Cache com saída:** o lead guarda `facts` + `researchedAt`, então a ficha não relê o site a cada
   abertura; o botão vira **Reler o site** e a releitura substitui análise e score **sem tocar** no que você
   cadastrou nem no rascunho editado.
@@ -125,7 +130,7 @@ Detalhes de implementação:
 - **CSS:** três camadas em ordem de importação — `index.css` (design system) →
   `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
   A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 78 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 79 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura; `flows.test.tsx` (happy-dom) cobre

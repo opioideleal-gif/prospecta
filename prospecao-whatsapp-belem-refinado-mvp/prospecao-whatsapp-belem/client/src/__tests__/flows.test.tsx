@@ -418,6 +418,32 @@ describe("caça com ações por empresa (nada entra sozinho)", () => {
   });
 });
 
+describe("fatos guardados dentro do registro de pesquisa reabrem a ficha sem nova leitura", () => {
+  it("usa research.facts, mostra os painéis e não chama a API sozinho", async () => {
+    const facts = parsePageFacts(SITE_HTML, "https://www.imoveisbelem.belem.br");
+    localStorage.setItem("prospecta-leads-v2", JSON.stringify([{ id: "hydrated-1", name: "Imóveis Belém Teste", segment: "Imobiliárias", location: "Belém - PA", phone: "91984772865", priority: "Alta", score: 80, pain: "A investigar", opportunity: "Site + captação via WhatsApp", initials: "IB", color: "lime", research: { lastResearchAt: "2026-09-01T00:00:00.000Z", researchHash: "h", signals: [], opportunities: [], sources: [], facts } }]));
+    await unmount();
+    await render();
+    const spy = stubRoutes({});
+    await tab("Leads");
+    await click(q(".lead-card .more-button"));
+    expect(text()).toContain("DADOS ENCONTRADOS");
+    expect(text()).toContain("INTERPRETAÇÃO COMERCIAL");
+    expect((q(".lead-card .lead-score small") as HTMLElement).textContent).toMatch(/lido, score do cadastro|com evidência/);
+    // as camadas derivadas são reconstruídas dos mesmos fatos: nada de "sem interpretação"
+    expect(text()).not.toContain("Sem interpretação por pesquisa");
+    expect(q(".rp-interpretation")?.textContent).toMatch(/INTERPRETAÇÃO COMERCIAL/);
+    expect(q(".score-reasons li")?.textContent).toBeTruthy(); // motivos voltam a aparecer
+    // os campos vazios do lead são preenchidos com o que a página confirmou
+    expect(q(".contact-grid")?.textContent).toContain("@imoveisbelem_oficial");
+    expect(q(".contact-grid")?.textContent).toContain("imoveisbelem.belem.br");
+    // e o texto gerado não pode contradizer o painel
+    expect(q(".rp-usage")?.textContent).not.toMatch(/de fora:[^·]*Instagram \(não verificado\)/);
+    // abrir a ficha nunca dispara leitura nova
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 describe("releitura do site sem perder o que o vendedor fez", () => {
   const RESEARCH_OK = (facts: unknown, hash: string) => ({ record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: hash, signals: [], opportunities: [], sources: [], facts } });
   it("com fato guardado o botão vira 'Reler o site' e a releitura substitui a análise, mantendo o cadastro", async () => {
@@ -487,6 +513,11 @@ describe("pesquisa aplicada na ficha do lead", () => {
     expect(text()).toContain("não verificado"); // o estado de quem não foi lido, visível
     // telefone/instagram já cadastrados continuam os mesmos, não foram sobrescritos
     expect(q(".rp-panel")?.textContent).toContain("não indicado na página");
+    // o card da lista passa a dizer se o número tem evidência por trás
+    await click(q(".modal-close"));
+    expect((q(".lead-card .lead-score small") as HTMLElement).textContent).toMatch(/com evidência \(\d+→\d+\)/);
+    expect(q(".lead-card .lead-score")?.getAttribute("title")).toMatch(/base \d+ →/);
+    await click(q(".lead-card .more-button"));
     await unmount();
     await render();
     await openLeadWithSite();
