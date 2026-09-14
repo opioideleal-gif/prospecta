@@ -51,11 +51,26 @@ Abra <http://localhost:3000>.
 | Área | Estado |
 | --- | --- |
 | **Hoje** | Fila do dia com follow-ups vencidos, melhor lead, top 8 ordenados por score |
-| **Leads** | 157 empresas, filtro por segmento/prioridade/busca, mudança de status em 12 estágios, CSV import, cadastro manual |
+| **Leads** | 157 empresas, busca, filtros de segmento/prioridade/estágio/follow-up, ordenação, faixa de funil clicável, mudança de status em 13 estágios, CSV import com dedupe, cadastro manual |
+| **Ficha da empresa** | Contato (telefone/WhatsApp/site/Instagram/e-mail/localização) com links reais, score com motivos, estágio com stepper, follow-up com data, observações, histórico completo e barra de ações fixa |
 | **Oportunidades** | Agrupamento por serviço ofertado com score médio e "caçar mais deste perfil" |
-| **Playbook** | Scripts prontos por estágio (primeiro contato, follow-up, qualificação) + variantes Direta/Consultiva/Natural |
+| **Playbook** | 4 scripts por estágio (primeiro contato, follow-up, qualificação, agendamento) + as 3 abordagens Direta/Consultiva/Natural aplicadas a um lead qualquer |
 | **Caçar Leads** | Busca em DuckDuckGo/Bing via `server/hunt.ts`, extrai telefone/site, calcula score e confiança, importa os marcados |
 | **Resultados** | Funil por canal (telefone/WhatsApp/site/Instagram/e-mail), taxas por segmento, tudo calculado sobre eventos reais |
+
+## Fluxo central
+
+A tela segue a ordem real de trabalho de quem prospecta:
+
+```
+encontrar  →  analisar  →  identificar oportunidade  →  abordar
+   ↑                                                        ↓
+  fechar  ←  acompanhar follow-up  ←  registrar contato  ←─┘
+```
+
+Cada passo tem um atalho dentro da ficha do lead (`.detail-actions`): **Abrir WhatsApp**,
+**Gerar abordagem**, **Contato realizado**, **Copiar mensagem**, **Marcar enviada** — mais o
+stepper de estágio, a agenda de follow-up e o campo de observação no corpo da ficha.
 
 Detalhes de implementação:
 
@@ -64,6 +79,14 @@ Detalhes de implementação:
   `server/schema.sql` tem 13 tabelas `companies/contacts/leads/...` prontas, mas **nenhum código as usa**.
 - **Score:** heurístico e determinístico (`client/src/intelligence.ts` casa-chave →
   dor/oportunidade/serviço recomendado), entre 35 e 98. Não é IA chamada em runtime.
+  Na ficha, o número aparece como `78 / 100` com o rótulo (`scoreLabel`) e os motivos
+  vindos de `intelligence.scoreReasons` — sem inventar justificativa.
+- **CSS:** três camadas em ordem de importação — `index.css` (design system) →
+  `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
+  A última só acrescenta seletores; não sobrescreve regra existente por remoção.
+- **Testes:** `pnpm test` roda 31 casos de fluxo em `client/src/__tests__/`
+  (`flows.test.tsx` com happy-dom cobre as 6 abas, filtros, ficha, ações rápidas,
+  CSV e persistência; `api.test.ts` valida o contrato das rotas Express offline ou online).
 - **Contato:** botão de WhatsApp gerado na hora como `https://wa.me/55+DDD+número` (telefone normalizado).
   E-mail e site aparecem no card do lead, mas **não** são clicáveis — não há `mailto:` nem link de site.
 - **Type-check:** `pnpm check` passa limpo (TypeScript `strict: true`, 0 erros).
@@ -76,7 +99,13 @@ Detalhes de implementação:
 3. **Sem histórico de mensagens enviadas de verdade** — o status é marcado à mão.
 4. `template.json` é resíduo do gerador (template original do Manus) e pode ser ignorado.
 5. `attached_assets/` não existe no repo, mas o alias `@assets` do `vite.config.ts` aponta para ele.
+   O `package.json` também lista um pacote `add@^2.0.6` em devDependencies (resíduo de um
+   `pnpm add` digitado errado) — inofensivo, removível.
 6. `client/src/components/Map.tsx` é só a documentação de exemplo do Google Maps, não está em uso
-   (e exigiria API key).
-7. Bundle único de ~512 kB JS — sem code-splitting; o `index.html` do dev não define
+   (e exigiria API key). Dos 53 componentes shadcn em `client/src/components/ui/`, só 5 são
+   importados — o app é estilizado em CSS próprio.
+7. Bundle único de ~540 kB JS — sem code-splitting; o `index.html` não define
    `VITE_ANALYTICS_*`, daí os dois avisos no build.
+8. `pnpm format` (prettier) nunca foi rodado no repo e **não** deve ser: formataria o
+   `Home.tsx` de ~140 para ~2400 linhas e apagaria o histórico de revisão do diff.
+9. O `schema.sql` de 13 tabelas continua sem uso — decisão explícita de adiar o banco.
