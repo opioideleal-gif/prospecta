@@ -240,7 +240,9 @@ export function buildApproaches(ctx: ApproachContext): GeneratedApproach[] {
   const problem = problemSentence(ctx);
   const note = noteSentence(ctx);
 
-  const usedFacts = [observed, finding, problem, note].flatMap((s) => (s.fact ? [s.fact] : []));
+  // usado por ESTILO, não "usado em algum lugar": a linha "usa:" na tela é o que o vendedor
+  // lê para conferir a mensagem, então listar ali algo que o texto não diz seria mentira.
+  const factsFrom = (parts: (string | Sentence | undefined)[]) => [...new Set(parts.flatMap((s) => (typeof s === "object" && s?.fact ? [s.fact] : [])))];
   const skippedFacts: string[] = [];
   if (!ctx.website) skippedFacts.push("site (não cadastrado/não lido)");
   if (!ctx.instagram) skippedFacts.push("Instagram (não verificado)");
@@ -251,39 +253,46 @@ export function buildApproaches(ctx: ApproachContext): GeneratedApproach[] {
   if (!note.text) skippedFacts.push("notas do vendedor");
   if (!problem.text) skippedFacts.push("dor provável");
 
-  // "cardápio" é palavra de comida; sem evidência disso na página, o certo é "catálogo"
-  const menuWord = /card[aá]pio/i.test(`${ctx.facts?.presence.catalog.evidence ?? ""} ${ctx.opportunity ?? ""} ${ctx.description ?? ""}`) ? "cardápio" : "catálogo";
+  // "cardápio" é palavra de comida; sem evidência disso na página, o certo é "catálogo".
+  // Só contam texto do lead e evidência de coisa ENCONTRADA: a prova de AUSÊNCIA diz
+  // "nenhum catálogo/cardápio na página lida", e procurar nela daria "cardápio" a uma clínica.
+  const fromPage = ctx.facts?.presence.catalog.state === "found" ? ctx.facts.presence.catalog.evidence ?? "" : "";
+  const menuEvidence = [fromPage, ctx.description, ctx.opportunity, ctx.facts?.pageTitle, ...(ctx.facts?.headings ?? []), ...(ctx.products ?? []), ...(ctx.services ?? [])].filter(Boolean).join(" ");
+  const menuWord = /card[aá]pio/i.test(menuEvidence) ? "cardápio" : "catálogo";
   const vocab = { ...rawVocab, thinking: rawVocab.thinking.replace("{{menu}}", menuWord), build: rawVocab.build.replace("{{menu}}", menuWord), payoff: rawVocab.payoff.replace("{{menu}}", menuWord), question: rawVocab.question.replace("{{menu}}", menuWord) };
   const offer = `Consigo ${vocab.build}`;
   const softAsk = ctx.phone ? `Se preferir, responde aqui ou no ${formatPhoneBr(ctx.phone)}.` : "Se preferir, responde por aqui.";
 
   if (state === "encerrado") {
     const text = `${greeting(ctx, state)}. Lead encerrado no funil — se a abordagem for reaberta, escolha outro estágio e o texto é gerado de novo com o contexto atual.`;
+    // nada do que foi pesquisado entra numa mensagem de lead encerrado: a lista é vazia de propósito
     return [
-      { style: "Direta", text, usedFacts, skippedFacts, contactState: state, objective },
-      { style: "Consultiva", text, usedFacts, skippedFacts, contactState: state, objective },
-      { style: "Natural", text, usedFacts, skippedFacts, contactState: state, objective },
+      { style: "Direta", text, usedFacts: [], skippedFacts, contactState: state, objective },
+      { style: "Consultiva", text, usedFacts: [], skippedFacts, contactState: state, objective },
+      { style: "Natural", text, usedFacts: [], skippedFacts, contactState: state, objective },
     ];
   }
 
-  const direct = join([
+  const directParts: (string | Sentence | undefined)[] = [
     state === "novo" ? `Oi, ${speakable(ctx.companyName)}!` : greeting(ctx, state),
     observed.text ? observed : finding,
     `${offer} — ${vocab.payoff}`,
     state === "enviado" ? "Sem pressa, só não queria deixar o assunto pendurado" : vocab.question,
     softAsk,
-  ]);
+  ];
+  const direct = join(directParts);
 
-  const consultive = join([
+  const consultiveParts: (string | Sentence | undefined)[] = [
     greeting(ctx, state),
     finding,
     observed,
     problem,
     `É por isso que a conversa faz sentido: ${vocab.thinking}. ${offer}, ${vocab.payoff}`,
     state === "enviado" ? `Se já tiverem resolvido isso, me diz e eu não volto no assunto. ${softAsk}` : `${softAsk}`,
-  ]);
+  ];
+  const consultive = join(consultiveParts);
 
-  const natural = join([
+  const naturalParts: (string | Sentence | undefined)[] = [
     greeting(ctx, state),
     finding,
     observed,
@@ -291,12 +300,13 @@ export function buildApproaches(ctx: ApproachContext): GeneratedApproach[] {
     `Fiquei pensando em ${vocab.thinking}`,
     `Sem querer virar mais um oferecendo sistema, ${offer.toLowerCase()}${state === "novo" ? ", se é que isso ajuda vocês agora" : ", retomando o que já conversamos"}`,
     `Se fizer sentido troco duas ideias rápidas; se não, agradeço a atenção mesmo assim. ${vocab.question}`,
-  ]);
+  ];
+  const natural = join(naturalParts);
 
   return [
-    { style: "Direta", text: direct, usedFacts, skippedFacts, contactState: state, objective },
-    { style: "Consultiva", text: consultive, usedFacts, skippedFacts, contactState: state, objective },
-    { style: "Natural", text: natural, usedFacts, skippedFacts, contactState: state, objective },
+    { style: "Direta", text: direct, usedFacts: factsFrom(directParts), skippedFacts, contactState: state, objective },
+    { style: "Consultiva", text: consultive, usedFacts: factsFrom(consultiveParts), skippedFacts, contactState: state, objective },
+    { style: "Natural", text: natural, usedFacts: factsFrom(naturalParts), skippedFacts, contactState: state, objective },
   ];
 }
 

@@ -240,8 +240,10 @@ export function parsePageFacts(html: string, url: string, options: { httpStatus?
   };
 }
 
-/** Uma página principal pode não ter telefone; a de contato quase sempre tem. Une sem sobrescrever. */
-export function mergeFacts(primary: PageFacts, extra: PageFacts): PageFacts {
+/** Uma página principal pode não ter telefone; a de contato quase sempre tem. Une sem sobrescrever.
+ *  `extra` é opcional porque a segunda página pode nem ter sido lida — aí os fatos ficam como estão. */
+export function mergeFacts(primary: PageFacts, extra?: PageFacts | null): PageFacts {
+  if (!extra) return primary;
   return {
     ...primary,
     phones: [...new Set([...(primary.phones || []), ...(extra.phones || [])])],

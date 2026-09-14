@@ -29,8 +29,21 @@ const URL = "https://paoquente.com.br";
 
 const emptyLead = { name: "Padaria Pão Quente", segment: "Serviços", location: "Belém - PA", score: 62 };
 
+// clínica odontológica: catálogo ausente, mas a palavra "cardápio" aparece na string que prova
+// a AUSÊNCIA — a escolha de vocabulário não pode ler ali.
+const Clinic_HTML = `<html><head><title>Clínica Vida Belém | Odontologia</title><meta name="description" content="Clínica odontológica em Batista Campos. Limpeza, clareamento e aparelho." /></head><body><h1>Clínica Vida Belém</h1><h2>Nossos tratamentos</h2><a href="https://instagram.com/clinicavidabelem">@clinicavidabelem</a><a href="https://wa.me/5591999990000">Fale pelo WhatsApp</a><p>Ligue: (91) 3222-1100</p><p>Rua Gaspar Viana 123, Batista Campos — Belém/PA</p></body></html>`;
+
 describe("1. pesquisa devolve só o que a página tem, organizado por grupo", () => {
   const facts = parsePageFacts(HOME_HTML, URL);
+  it("a segunda página é opcional: ler só a home não quebra nem inventa", () => {
+    const home = parsePageFacts(HOME_HTML, URL);
+    expect(mergeFacts(home)).toEqual(home); // sem /contato lida, os fatos ficam exatamente como estão
+    const contact = parsePageFacts(CONTACT_HTML, `${URL}/contato`, { pageLabel: "página de contato" });
+    const merged = mergeFacts(home, contact);
+    expect(merged.phones.length).toBeGreaterThanOrEqual(contact.phones.length);
+    expect(merged.checkedOtherUrl).toBe(`${URL}/contato`);
+  });
+
   it("separa encontrado / não indicado / não verificado", () => {
     expect(facts.fetchOk).toBe(true);
     expect(facts.presence.site.state).toBe("found");
@@ -314,8 +327,26 @@ describe("6-9. abordagem usa só campos que existem, com 3 estilos e um objetivo
     const styles = forObjective("Catálogo digital");
     expect(styles.map((s) => s.style)).toEqual(["Direta", "Consultiva", "Natural"]);
     expect(new Set(styles.map((s) => s.text)).size).toBe(3);
-    for (const s of styles) expect(s.usedFacts).toEqual(styles[0].usedFacts);
+    // o que ficou de fora é o mesmo nos 3 (mesmo contexto, mesma checagem)...
+    for (const s of styles) expect(s.skippedFacts).toEqual(styles[0].skippedFacts);
+    // ...e o "usa:" de cada estilo lista só o que AQUELE texto diz, senão a auditoria minte
+    for (const s of styles) expect(s.usedFacts.join(" ")).toMatch(/Instagram @paoquentebel/);
+    const withNote = buildApproaches({ ...ctx, objective: "Catálogo digital", notes: "pediu retorno depois do feriado" });
+    expect(withNote[2].usedFacts.join(" ")).toMatch(/nota do vendedor/); // Natural retoma a anotação
+    expect(withNote[2].text).toMatch(/Da última vez anotei aqui/);
+    expect(withNote[0].usedFacts.join(" ")).not.toMatch(/nota do vendedor/); // a Direta não cita
+    expect(withNote[0].text).not.toMatch(/Da última vez anotei aqui/);
+    expect(styles[0].skippedFacts).toContain("notas do vendedor"); // sem nota, ela entra na lista de ausências
     expect(styles[0].text.split(/[.!?]/).length).toBeLessThanOrEqual(styles[1].text.split(/[.!?]/).length);
+  });
+  it("lead encerrado não lista fato nenhum como se tivesse sido usado", () => {
+    const closed = buildApproaches({ ...ctx, stageStatus: "Ganho" });
+    expect(closed).toHaveLength(3);
+    for (const a of closed) {
+      expect(a.usedFacts).toEqual([]);
+      expect(a.text).toMatch(/encerrado/i);
+      expect(a.text).not.toMatch(/@paoquentebel|catálogo|WhatsApp/i);
+    }
   });
   it("objetivo escolhido muda o ângulo da oferta", () => {
     expect(forObjective("Catálogo digital")[0].text).toMatch(/catálogo online/i);
@@ -343,14 +374,19 @@ describe("6-9. abordagem usa só campos que existem, com 3 estilos e um objetivo
       expect(a.skippedFacts.join(" ")).toMatch(/site cadastrado mas não lido/);
     }
   });
-  it("diz 'catálogo', e só diz 'cardápio' quando a página fala em cardápio", () => {
+  it("diz 'cardápio' só quando a página fala em cardápio, e 'catálogo' no resto", () => {
     const withMenu = buildApproaches({ ...contextFromLead({ ...emptyLead, facts }), objective: "Catálogo digital" });
-    expect(withMenu.some((a) => /cardápio/i.test(a.text))).toBe(true);
-    expect(withMenu.every((a) => /catálogo online/i.test(a.text))).toBe(true);
-      const noMenuFacts = { ...facts, presence: { ...facts.presence, catalog: { state: "found" as const, evidence: "menção a catálogo de produtos" } } };
-    const noMenu = buildApproaches({ ...contextFromLead({ ...emptyLead, facts: noMenuFacts }), objective: "Catálogo digital" });
-    expect(noMenu[0].text).toMatch(/catálogo/i);
-    expect(noMenu.some((a) => /cardápio/i.test(a.text))).toBe(false);
+    expect(withMenu.some((a) => /cardápio/i.test(a.text))).toBe(true); // HOME_HTML tem <h1>Nosso cardápio</h1>
+    expect(withMenu.every((a) => /catálogo online/i.test(a.text))).toBe(true); // a oferta continua "catálogo online"
+    // página de clínica: nada de cardápio em lugar nenhum, nem como prova de ausência
+    const clinicFacts = parsePageFacts(Clinic_HTML, "https://clinicavidabelem.com.br", { httpStatus: 200, pageLabel: "página inicial" });
+    for (const facts2 of [clinicFacts, { ...clinicFacts, presence: { ...clinicFacts.presence, catalog: { state: "found" as const, evidence: "lista de materiais: “catálogo técnico”" } } }]) {
+      const clinic = buildApproaches({ ...contextFromLead({ ...emptyLead, name: "Clínica Vida", facts: facts2 }), objective: "Catálogo digital" });
+      for (const a of clinic) {
+        expect(a.text).not.toMatch(/cardápio/i);
+        expect(a.text).toMatch(/catálogo/i);
+      }
+    }
   });
   it("não inventa quantidade de nada: nenhum número solto além do telefone", () => {
     for (const a of forObjective("Catálogo digital")) {
