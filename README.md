@@ -51,6 +51,7 @@ Abra <http://localhost:3000>.
 
 | Área | Estado |
 | --- | --- |
+| **Início** | Porta de entrada do produto: uma busca grande ("refrigeração em Belém"), as buscas recentes com o que cada uma encontrou, e os três caminhos possíveis a partir dali. Nenhum resultado entra na carteira sozinho |
 | **Hoje** | Fila do dia com follow-ups vencidos, melhor lead, top 8 ordenados por score |
 | **Leads** | 157 empresas, busca, filtros de segmento/prioridade/estágio/follow-up, ordenação, faixa de funil clicável, mudança de status em 13 estágios, CSV import com dedupe, cadastro manual |
 | **Ficha da empresa** | Contato (telefone/WhatsApp/site/Instagram/e-mail/localização) com links reais, **DADOS ENCONTRADOS** nos 5 grupos da pesquisa, **INTERPRETAÇÃO COMERCIAL** separada dos fatos, score com motivos e delta de evidência, estágio com stepper, follow-up com data, observações, histórico completo e barra de ações fixa |
@@ -171,14 +172,33 @@ Detalhes de implementação:
   caiu de 581 kB para ~270 kB), e o Express serve asset com hash no nome como
   `immutable, max-age=31536000` com **gzip em streaming feito com `node:zlib`** — sem adicionar
   dependência. O teste descompacta e compara byte a byte com o arquivo do disco.
-- **CSS:** três camadas em ordem de importação — `index.css` (design system) →
-  `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups).
-  A última só acrescenta seletores; não sobrescreve regra existente por remoção.
-- **Testes:** `pnpm test` roda 105 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **CSS:** quatro camadas em ordem de importação — `index.css` (design system) →
+  `feature.css` (funcionalidades) → `operations.css` (ficha, funil, follow-ups) →
+  `depth.css` (profundidade). As três primeiras não foram reescritas: `depth.css` só acrescenta
+  seletores e remapeia tokens, então o que os testes já cobriam continua valendo.
+- **Profundidade:** `depth.css` define quatro níveis — LEVEL 0 fundo, LEVEL 1 painéis,
+  LEVEL 2 cards interativos, LEVEL 3 ficha — e o tema escuro é padrão (`ThemeProvider` com
+  `defaultTheme="dark" switchable`; o claro continua a um clique no botão da topbar). A camada
+  escura dos componentes herdados é **gerada** por `scripts/gen-theme-layer.ts`
+  (`pnpm exec tsx scripts/gen-theme-layer.ts`) a partir das cores reais dos três arquivos
+  anteriores: fundo neutro vira superfície do sistema, fundo com intenção (follow-up vencido,
+  confiança do resultado da caça) vira `color-mix` do mesmo matiz. Rodar o script de novo depois
+  de mexer em cor é o caminho curto para o tema não divergir.
+- **Movimento:** `client/src/motion.ts` concentra GSAP (timeline, `stagger`, `Flip`,
+  ScrollTrigger) e nada mais importa GSAP. A sequência de caça é campo expandindo → botão
+  respondendo → filtros recuando → indicador ligado **no `fetch` real** → resultados em
+  `stagger`; fechar a ficha devolve o painel ao card de origem (`returnSurface`). Com
+  `prefers-reduced-motion` os elementos aparecem no estado final, sem deslocamento. Nenhum
+  progresso é simulado: o que se move é o que o sistema está de fato fazendo.
+- **Testes:** `pnpm test` roda 115 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
-  as 6 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload;
+  as 7 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload,
+  mais a camada nova: Início como aba padrão, busca que mostra o melhor match antes das outras,
+  falha de busca assumida no texto, estrela de prioridade que persiste e reordena, peso do card
+  (primary/utility) por critério, sinal ainda marcado como cadastro quando a página não foi lida,
+  ida e volta do FLIP card → ficha e alternância de tema;
   `api.test.ts` valida o contrato das rotas Express.
 - **Follow-up:** "Concluir" limpa a data, registra o evento e **não** move o estágio — avançar
   no funil continua decisão explícita do vendedor (stepper ou select).

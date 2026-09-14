@@ -26,9 +26,9 @@ export function PresencePanel({ facts }: { facts?: PageFacts }) {
   }
   const groups = facts.groups ?? factGroups(facts);
   return (
-    <div className="rp-panel">
+    <div className="rp-panel" data-flip-content>
       <div className="rp-panel-head">
-        <h4>DADOS ENCONTRADOS</h4>
+        <h4><span className="rp-kicker">Signals</span>DADOS ENCONTRADOS</h4>
         <span>{facts.url}{facts.checkedOtherUrl ? ` + ${facts.checkedOtherUrl}` : ""} · lido em {new Date(facts.retrievedAt).toLocaleString("pt-BR")}</span>
       </div>
       {!facts.fetchOk && <p className="rp-warn">A página não respondeu (HTTP {facts.httpStatus ?? "sem resposta"}). Nenhum item abaixo pode ser lido como “não tem”.</p>}
@@ -63,7 +63,7 @@ export function InterpretationPanel({ interpretation, deltas, base, score }: { i
   const reasons = (deltas ?? []).filter((d) => d.delta !== 0);
   return (
     <div className="rp-panel rp-interpretation">
-      <div className="rp-panel-head"><h4>INTERPRETAÇÃO COMERCIAL</h4><span>{interpretation.confidence}% de confiança{(base ?? score) !== score ? ` · score ${base}→${score}` : ""}</span></div>
+      <div className="rp-panel-head"><h4><span className="rp-kicker">Why this lead</span>INTERPRETAÇÃO COMERCIAL</h4><span>{interpretation.confidence}% de confiança{(base ?? score) !== score ? ` · score ${base}→${score}` : ""}</span></div>
       <p className="rp-headline">{interpretation.headline}</p>
       <div className="rp-split">
         <section>
@@ -106,7 +106,7 @@ export function ApproachPanel({ approaches, objective, style, draft, hasPhone, o
   const edited = Boolean(draft) && draft !== current?.text;
   return (
     <div className="rp-panel rp-approach">
-      <div className="rp-panel-head"><h4>ABORDAGEM CONTEXTUAL</h4><span>gerada só com os campos que existem</span></div>
+      <div className="rp-panel-head"><h4><span className="rp-kicker">First contact</span>ABORDAGEM CONTEXTUAL</h4><span>gerada só com os campos que existem</span></div>
       <div className="rp-controls">
         <label>Objetivo comercial
           <select value={objective ?? ""} onChange={(e) => onObjective(e.target.value as Objective)}>

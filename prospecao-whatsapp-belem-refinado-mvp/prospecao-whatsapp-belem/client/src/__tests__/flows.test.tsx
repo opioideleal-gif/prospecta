@@ -12,6 +12,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import Home from "@/pages/Home";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { parsePageFacts } from "@shared/research";
 
 (globalThis as unknown as { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -77,10 +78,14 @@ describe("base de leads preservada", () => {
     expect(text()).toContain("de 157");
     expect(qa(".lead-card").length).toBeGreaterThan(100);
   });
-  it("mantém os dados de contato originais no card", async () => {
+  it("mantém os dados de contato do lead no card, legíveis e canônicos", async () => {
     await tab("Leads");
-    expect(text()).toContain("91988799884");
     expect(text()).toContain("Limaq");
+    // exibição humana no card, forma canônica no link — o mesmo número, dois propósitos
+    const lima = qa(".lead-card").find((c) => (c.textContent || "").includes("Limaq"));
+    expect(lima?.textContent).toContain("(91) 98879-9884");
+    expect(lima?.querySelector(".whatsapp-button")).toBeTruthy();
+    expect(lima?.textContent).not.toMatch(/undefined|NaN/);
   });
   it("preserva as 3 abordagens do playbook", async () => {
     await tab("Playbook");
@@ -142,7 +147,10 @@ describe("card do lead: contato que abre de verdade", () => {
 
 describe("navegação entre as 6 abas", () => {
   it("alterna hoje, caçar, resultados, leads, oportunidades e playbook", async () => {
+    // o app abre no Início, não numa lista
+    expect(text()).toContain("Empresas que valem");
     const routes: Array<[string, string]> = [
+      ["Início", "Empresas que valem"],
       ["Hoje", "Saiba o que fazer"],
       ["Caçar Leads", "Caçar"],
       ["Resultados", "Canais que"],
@@ -599,5 +607,120 @@ describe("pesquisa aplicada na ficha do lead", () => {
     expect(decodeURIComponent(String(open.mock.calls.at(-1)?.[0] ?? ""))).toContain("Texto meu revisado antes de enviar.");
     await click(q(".detail-actions .whatsapp-button"));
     expect(decodeURIComponent(String(open.mock.calls.at(-1)?.[0] ?? ""))).toContain("Texto meu revisado antes de enviar.");
+  });
+});
+
+describe("início, card e movimento (redesign)", () => {
+  it("abre com orientação e busca no centro, não com uma lista de cards", () => {
+    expect(q(".px-hero h1")?.textContent).toContain("Empresas que valem");
+    expect(q("#px-hunt")).toBeTruthy();
+    expect(q(".px-search-go")?.textContent).toMatch(/Hunt/i);
+    expect(qa(".px-hero-steps li").map((li) => li.textContent)).toEqual(["discover", "find", "understand", "decide", "reach out"]);
+    expect(q(".px-empty h3")?.textContent).toContain("Nenhuma busca ainda");
+  });
+  it("caçar pelo Início mostra melhor match, depois as outras, e lembra a busca", async () => {
+    stubRoutes({ "/api/hunt-leads": { results: [HUNT_RESULT, { ...HUNT_RESULT, id: "h2", name: "Outra Exemplo" }] } });
+    await setInput(q("#px-hunt"), "refrigeração em Belém");
+    await click(q(".px-search-go"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(q(".px-result--best h3")?.textContent).toBe("Refrigeração Exemplo");
+    expect(q(".px-result-kicker")?.textContent).toMatch(/Best match/i);
+    expect(qa(".px-result-list .px-row").length).toBe(1);
+    expect(text()).toContain("2 empresas encontradas");
+    // nada entra na carteira sozinho: a busca só oferece ação
+    const stored = JSON.parse(localStorage.getItem("prospecta-leads-v2") || "[]");
+    expect(stored).toHaveLength(157);
+    expect(stored.some((l: { name?: string }) => l.name === "Refrigeração Exemplo")).toBe(false);
+    // a memória guarda o que o motor de fato procurou (segmento + cidade), não o texto cru
+    const memory = JSON.parse(localStorage.getItem("prospecta-searches-v1") || "[]");
+    expect(memory[0].query).toContain("refrigeração");
+    expect(memory[0].found).toBe(2);
+  });
+  it("falha de busca diz isso, sem esconder nem enfeitar", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("fetch failed"); }));
+    await setInput(q("#px-hunt"), "qualquer coisa em Belém");
+    await click(q(".px-search-go"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(q(".px-hero-error")?.textContent).toMatch(/nada foi adicionado/i);
+    expect(q(".px-search-state")?.textContent).toMatch(/Falha/i);
+  });
+  it("estrela prioriza de verdade: persiste, marca o botão e ordena a lista", async () => {
+    await tab("Leads");
+    const card = qa(".lead-card")[1];
+    const name = card.querySelector("h3")?.textContent;
+    await click(card.querySelector(".px-star"));
+    expect(card.querySelector(".px-star")?.getAttribute("aria-pressed")).toBe("true");
+    const stored = JSON.parse(localStorage.getItem("prospecta-leads-v2") || "[]");
+    expect(stored.some((l: { name?: string; starred?: boolean }) => l.name === name && l.starred === true)).toBe(true);
+    const sortSel = qa("select").find((s) => [...s.querySelectorAll("option")].some((o) => o.value === "prioridades")) ?? null;
+    await setInput(sortSel, "prioridades");
+    expect(qa(".lead-card")[0].querySelector("h3")?.textContent).toBe(name);
+  });
+  it("peso do card é desigual por critério, não por decoração", async () => {
+    await tab("Leads");
+    expect(q(".lead-card--primary")).toBeTruthy();
+    expect(qa(".lead-card--utility").length).toBeGreaterThan(0);
+    expect(q(".lead-card--primary .px-card-tag")?.textContent).toMatch(/MELHOR MATCH|PRIORIDADE SUA/);
+  });
+  it("sem leitura o card não afirma ausência: o sinal vem marcado como cadastro", async () => {
+    await tab("Leads");
+    const card = qa(".lead-card")[0];
+    expect(card.querySelector(".px-signal--found")).toBeNull();
+    expect(card.querySelector(".px-signal--listed")).toBeTruthy();
+    expect(card.textContent).toMatch(/nada verificado ainda/i);
+  });
+  it("depois de ler o site, o sinal encontrado muda de estado no card", async () => {
+    stubRoutes({ "/api/research": { record: { lastResearchAt: "2026-09-13T00:00:00.000Z", researchHash: "abc", sources: [], signals: [], opportunities: [], facts: parsePageFacts(SITE_HTML, "https://exemplo.com.br") } } });
+    // "Skye" é um lead real da base, com site — é nele que a leitura muda o estado do sinal
+    await openDetail("Skye");
+    await click(byText(".research-callout button", "Pesquisar empresa"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    await click(q(".modal-close"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 60)); });
+    const card = qa(".lead-card")[0];
+    expect(card.querySelector(".px-signal--found")).toBeTruthy();
+    expect(card.textContent).toMatch(/sinal(is)? encontrado/i);
+  });
+  it("a ficha sai do card e volta para ele sem quebrar", async () => {
+    await tab("Leads");
+    const card = qa(".lead-card")[0];
+    await click(card.querySelector(".more-button"));
+    expect(q(".lead-detail")).toBeTruthy();
+    await click(q(".modal-close"));
+    // a ficha ainda está voltando para o card — é o FLIP inverso, não um bug
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    expect(q(".lead-detail")).toBeTruthy();
+    await act(async () => { await new Promise((r) => setTimeout(r, 400)); });
+    expect(q(".lead-detail")).toBeNull();
+    expect(qa(".lead-card")[0]).toBeTruthy();
+  });
+  it("narrativa INTELLIGENCE → OPPORTUNITY → OUTREACH na ficha", async () => {
+    await tab("Leads");
+    await click(q(".lead-card .more-button"));
+    const steps = qa(".px-detail-steps > div");
+    expect(steps.map((s) => s.querySelector("span")?.textContent)).toEqual(["Intelligence", "Opportunity", "Outreach"]);
+    expect(steps[0].textContent).toMatch(/site ainda não lido/);
+    expect(steps[1].textContent).toMatch(/nenhuma oportunidade escrita ainda|possível ganho/);
+    // e o rótulo diz o que a seção é, em inglês, sem tirar o português do lugar
+    expect(document.querySelector(".rp-kicker")?.textContent).toMatch(/Signals|Why this lead|First contact/);
+  });
+  it("tema escuro é o padrão e o vendedor pode voltar ao claro", async () => {
+    localStorage.removeItem("theme");
+    const holder = document.createElement("div");
+    document.body.appendChild(holder);
+    const themed = createRoot(holder);
+    // o provider mora em App; montamos o mesmo par para checar a alternância real
+    await act(async () => { themed.render(<ThemeProvider defaultTheme="dark" switchable><Home /></ThemeProvider>); });
+    expect(document.documentElement.classList.contains("dark")).toBe(true);
+    // o botão nomeia o que ele VAI fazer: no escuro, ele oferece o claro
+    const toggle = holder.querySelector(".px-theme");
+    expect(toggle?.textContent).toContain("Claro");
+    await click(toggle);
+    expect(document.documentElement.classList.contains("dark")).toBe(false);
+    expect(localStorage.getItem("theme")).toBe("light");
+    await act(async () => { themed.unmount(); });
+    holder.remove();
+    document.documentElement.classList.remove("dark");
+    localStorage.removeItem("theme");
   });
 });
