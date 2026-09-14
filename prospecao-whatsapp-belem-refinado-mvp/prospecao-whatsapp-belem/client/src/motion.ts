@@ -12,10 +12,21 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Flip } from "gsap/Flip";
 
 let registered = false;
+/**
+ * Um ponto só decide se existe movimento. Se registrar plugin falhar (ambiente estranho,
+ * bundle cortado), as helpers viram no-op e a UI aparece no estado final — conteúdo
+ * escondido esperando uma animação que nunca chega é o pior defeito possível aqui.
+ */
 function core() {
-  if (registered || typeof window === "undefined" || typeof document === "undefined") return;
-  gsap.registerPlugin(ScrollTrigger, Flip);
-  registered = true;
+  if (registered) return true;
+  if (typeof window === "undefined" || typeof document === "undefined") return false;
+  try {
+    gsap.registerPlugin(ScrollTrigger, Flip);
+    registered = true;
+  } catch {
+    return false;
+  }
+  return registered;
 }
 
 export function reducedMotion() {
@@ -26,11 +37,9 @@ export function reducedMotion() {
   }
 }
 
-/** Toda helper passa por aqui: sem document, sem movimento. */
+/** Toda helper passa por aqui: sem GSAP pronto, sem movimento — e sem esconder nada. */
 function can() {
-  if (typeof document === "undefined") return false;
-  core();
-  return true;
+  return core();
 }
 
 /**
@@ -57,7 +66,8 @@ export function enterSequence(scope: HTMLElement | null, selector = "[data-motio
 export function scrollReveal(scope: HTMLElement | null, selector = "[data-reveal]") {
   if (!scope || !can() || reducedMotion()) return () => {};
   const ctx = gsap.context(() => {
-    gsap.utils.toArray<HTMLElement>(selector).forEach((el) => {
+    const items = gsap.utils.toArray<HTMLElement>(selector);
+    items.forEach((el) => {
       gsap.from(el, {
         autoAlpha: 0,
         y: 22,
@@ -66,6 +76,9 @@ export function scrollReveal(scope: HTMLElement | null, selector = "[data-reveal
         scrollTrigger: { trigger: el, start: "top 86%", once: true },
       });
     });
+    // fonte/imagens mexem no layout depois do mount: uma refresh na próxima linha do tempo
+    // evita que um bloco já visível fique escondido por medida velha
+    if (items.length) requestAnimationFrame(() => { try { ScrollTrigger.refresh(); } catch { /* sem rolagem, sem pressa */ } });
   }, scope);
   return () => ctx.revert();
 }
