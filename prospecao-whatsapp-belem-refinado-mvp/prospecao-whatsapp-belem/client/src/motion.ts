@@ -141,6 +141,10 @@ export function navIndicator(nav: HTMLElement | null, selector = ".nav-item.acti
   const place = (animate: boolean) => {
     const active = nav.querySelector<HTMLElement>(selector);
     if (!active) { rail.style.opacity = "0"; return; }
+    // em telas estreitas a fila de itens passa a caber em scroll: o ativo vem para o centro
+    if (nav.scrollWidth > nav.clientWidth + 4 && typeof active.scrollIntoView === "function") {
+      active.scrollIntoView({ inline: "center", block: "nearest", behavior: reducedMotion() ? "auto" : "smooth" });
+    }
     rail.style.opacity = "1";
     const vars = { y: active.offsetTop, height: active.offsetHeight };
     if (!animate || reducedMotion()) gsap.set(rail, vars);
