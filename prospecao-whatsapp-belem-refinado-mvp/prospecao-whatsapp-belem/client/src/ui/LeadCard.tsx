@@ -3,7 +3,7 @@ import { ArrowUpRight, CalendarClock, Clipboard, Globe2, Instagram, Mail, Messag
 import type { Lead, LeadStatus } from "@/pages/Home";
 import { contactLinksOf } from "@/ui/contact";
 import { cardTier, countSignals, signalsOf } from "@/signals";
-import { pointerDepth } from "@/motion";
+import { pointerDepth, pop } from "@/motion";
 import { formatPhoneBr } from "@shared/normalize";
 import { scoreLabel } from "@/intelligence";
 
@@ -56,15 +56,6 @@ export function LeadCard({ lead, index, tier, statuses, statusOptions = [], scor
       className={`lead-card lead-card--${resolved} ${fuState === "vencido" ? "is-overdue" : ""}`}
       onDoubleClick={() => ref.current && onOpen(lead, ref.current)}
     >
-      <div className="lead-score px-card-score" title={scoreHint}>
-        <span className="px-card-score-label">Score</span>
-        <strong className="px-card-score-num" data-depth>{lead.score}</strong>
-        <small>{scoreLabel(lead.score)}{scoreTag}</small>
-        <div className="px-card-bar"><i style={{ width: `${lead.score}%` }} /></div>
-        {/* o número precisa dizer de onde veio sem popup e sem estado novo: uma linha, no hover */}
-        <small className="px-card-why">{(scoreHint || "").split(" · ").slice(0, 2).join(" · ") || "score heurístico · leia o site para justificar"}</small>
-      </div>
-
       <div className="lead-main">
         <div className="lead-title-row">
           <h3>{lead.name}</h3>
@@ -111,8 +102,17 @@ export function LeadCard({ lead, index, tier, statuses, statusOptions = [], scor
         </div>
       </div>
 
+      <div className="lead-score px-card-score" title={scoreHint}>
+        <span className="px-card-score-label">Score</span>
+        <strong className="px-card-score-num" data-depth>{lead.score}</strong>
+        <small>{scoreLabel(lead.score)}{scoreTag}</small>
+        <div className="px-card-bar"><i style={{ width: `${lead.score}%` }} /></div>
+        {/* o número precisa dizer de onde veio sem popup e sem estado novo: uma linha, no hover */}
+        <small className="px-card-why">{(scoreHint || "").split(" · ").slice(0, 2).join(" · ") || "score heurístico · leia o site para justificar"}</small>
+      </div>
+
       <div className="lead-actions">
-        <button className={`px-star ${lead.starred ? "is-on" : ""}`} aria-pressed={Boolean(lead.starred)} title={lead.starred ? "Tirar das prioridades" : "Marcar como prioridade"} onClick={() => onToggleStar(lead)}>
+        <button className={`px-star ${lead.starred ? "is-on" : ""}`} aria-pressed={Boolean(lead.starred)} title={lead.starred ? "Tirar das prioridades" : "Marcar como prioridade"} onClick={(e) => { pop(e.currentTarget, { scale: 1.22 }); onToggleStar(lead); }}>
           <Star size={15} fill={lead.starred ? "currentColor" : "none"} />
         </button>
         {onStatus && (

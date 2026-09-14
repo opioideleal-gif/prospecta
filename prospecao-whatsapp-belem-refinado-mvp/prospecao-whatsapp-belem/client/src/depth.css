@@ -646,3 +646,121 @@ html.dark .px-side-nav .sidebar-section-label { color: #92a5be; }
 .px-theme-cell[aria-pressed="true"] svg { color: var(--px-accent); }
 html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, var(--px-accent) 13%, var(--px-surface-2)); }
 @media (max-width: 700px) { .px-theme-cell span { display: none; } .px-theme-cell { padding: 6px 9px; } }
+
+/* ── 23. Início recomposta: duas colunas assimétricas e um rail de estado ─────────
+   1.62fr / .82fr: o trabalho (buscar) ocupa a largura, o contexto (recentes, estado da base)
+   ocupa a nota. Os resultados voltam a ser largos porque precisam de linha. Nada aqui é caixa
+   decorativa: cada bloco responde "o que faço aqui / por que importa / o que faço agora". */
+.px-start { grid-template-columns: minmax(0, 1.62fr) minmax(0, .82fr); column-gap: clamp(36px, 5.4vw, 84px); row-gap: clamp(34px, 4vw, 54px); max-width: 1290px; align-items: start; }
+.px-start > .px-hero { grid-column: 1; padding-top: var(--px-s4); }
+.px-start > .px-hero-steps { grid-column: 1; margin: 0; }
+.px-start > .px-rail { grid-column: 2; grid-row: 1 / span 2; }
+.px-start > .px-wide { grid-column: 1 / -1; }
+.px-hero > p { color: var(--px-text); font-weight: var(--px-w-text); }
+.px-hero h1 { font-weight: var(--px-w-title); }
+
+/* o trilho de passos vira leitura continua: 01 DISCOVER → 02 FIND → ... */
+.px-hero-steps b { width: 24px; height: 24px; font-size: 11.5px; letter-spacing: 0; }
+.px-hero-steps span { font-size: var(--px-fs-label); letter-spacing: .16em; color: var(--px-text-2); font-weight: 600; }
+.px-hero-steps p { color: var(--px-text-2); font-size: var(--px-fs-meta); }
+.px-hero-steps li[data-state="now"] p { color: var(--px-text); }
+.px-hero-steps li + li::before { content: "→"; position: absolute; left: -5px; top: 3px; margin: 0; color: var(--px-text-3); font: 400 12px/1 "Geist Mono Variable", ui-monospace, monospace; }
+@media (max-width: 1180px) { .px-hero-steps li + li::before { display: none; } }
+
+/* a busca é o objeto mais importante da tela — altura, presença, rótulo legível, CTA largo */
+.px-search { transition: box-shadow var(--px-mid), transform var(--px-mid) var(--px-ease); }
+.px-search-inner { padding: var(--px-s5) var(--px-s5) var(--px-s5) var(--px-s6); gap: var(--px-s4); min-height: 96px; align-items: center; }
+.px-search label { color: var(--px-text-2); font-weight: 600; font-size: var(--px-fs-meta); letter-spacing: .11em; margin-bottom: var(--px-s3); }
+.px-search input { font-size: clamp(20px, 2vw, 27px); letter-spacing: -.028em; font-weight: 500; }
+.px-search input::placeholder { color: var(--px-text-3); opacity: .8; }
+.px-search.is-focus { box-shadow: var(--px-shadow-3), var(--px-glow), 0 0 0 1px color-mix(in srgb, var(--px-accent) 34%, transparent); transform: translateY(-2px); }
+.px-search.is-focus .px-search-inner { background: var(--px-surface-3); }
+.px-search.is-focus input { color: var(--px-text); }
+.px-search-go { padding: var(--px-s4) var(--px-s5); border-radius: var(--px-radius-xs); font-weight: var(--px-w-strong); gap: var(--px-s3); }
+.px-search-go:hover { transform: translateY(-2px); }
+/* quando a busca assume, o resto recua: menos ruído no momento de digitar */
+.px-hero-steps, .px-rail { transition: opacity var(--px-slow) var(--px-ease); }
+.px-start:has(.px-search.is-focus) :is(.px-hero-steps, .px-rail) { opacity: .55; }
+
+/* rail lateral: estado, não painel de métricas */
+.px-rail { display: grid; gap: var(--px-s5); align-content: start; }
+.px-rail-card { display: grid; gap: var(--px-s3); padding: var(--px-s5); border-radius: var(--px-radius); background: var(--px-surface-1); border-top: 1px solid var(--px-edge-strong); box-shadow: var(--px-shadow-1); }
+.px-rail-kicker { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--px-text-2); }
+.px-rail-lede, .px-rail-note { margin: 0; font-size: var(--px-fs-meta); line-height: 1.5; color: var(--px-text-2); }
+.px-rail-sub { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--px-text-3); }
+.px-rail-rows { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.px-rail-rows li + li { border-top: 1px solid var(--px-edge); }
+.px-rail-rows button { width: 100%; display: grid; gap: var(--px-s1); text-align: left; padding: var(--px-s3) 0; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; transition: color var(--px-fast), padding-left var(--px-fast) var(--px-ease); }
+.px-rail-rows button:hover { padding-left: var(--px-s2); }
+.px-rail-rows button:hover b { color: var(--px-accent); }
+.px-rail-rows b { font-size: var(--px-fs-body); font-weight: var(--px-w-medium); color: var(--px-text); }
+.px-rail-rows small { font-size: var(--px-fs-meta); color: var(--px-text-2); }
+.px-rail-rows--data li { display: flex; align-items: baseline; justify-content: space-between; gap: var(--px-s3); padding: var(--px-s2) 0; }
+.px-rail-rows--data span { font: 600 var(--px-fs-label)/1.2 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--px-text-2); }
+.px-rail-rows--data b { font: 620 var(--px-fs-h3)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text); font-variant-numeric: tabular-nums; }
+.px-seeds { display: flex; flex-wrap: wrap; gap: var(--px-s2); margin: 0; padding: 0; list-style: none; }
+.px-seeds button { padding: 7px var(--px-s3); border-radius: 99px; border: 1px solid var(--px-edge-strong); background: var(--px-surface-2); color: var(--px-text); font: 400 var(--px-fs-meta)/1 "Geist Variable", "Inter", system-ui, sans-serif; cursor: pointer; transition: border-color var(--px-fast), color var(--px-fast), transform var(--px-fast) var(--px-ease); }
+.px-seeds button:hover { border-color: color-mix(in srgb, var(--px-accent) 60%, transparent); color: var(--px-accent); transform: translateY(-1px); }
+/* empty state editorial: frase e caminho, não um retângulo gigante no meio do nada */
+.px-rail-card.px-empty { padding: var(--px-s4) 0 var(--px-s2); background: none; border: 0; box-shadow: none; justify-items: start; text-align: left; gap: var(--px-s3); }
+.px-rail-card.px-empty h3 { margin: 0; font: 600 var(--px-fs-h2)/1.15 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.026em; color: var(--px-text); max-width: 18ch; }
+.px-rail-card.px-empty p { max-width: 40ch; }
+.px-rail-card.px-empty .dark-action { margin-top: var(--px-s2); }
+.px-start .px-empty:not(.px-rail-card) { padding: clamp(26px, 4vw, 40px) var(--px-s5); text-align: left; justify-items: start; border-style: solid; border-color: var(--px-edge); background: var(--px-surface-1); }
+.px-start .px-empty:not(.px-rail-card) p { max-width: 62ch; }
+@media (max-width: 1080px) {
+  .px-start { grid-template-columns: minmax(0, 1fr); }
+  .px-start > .px-rail { grid-column: 1; grid-row: auto; }
+}
+
+/* ── 24. card do lead: ordem de leitura e score com presença ──────────────────────
+   DOM e olho concordam: nome → contexto → score → sinais → próximo passo. O score saiu da
+   primeira coluna (onde era só um número solto) e virou um bloco próprio à direita do título:
+   rótulo, número, veredito, barra e os motivos logo abaixo — visíveis, não escondidos no hover,
+   porque "por que 88" é a pergunta que faz a pessoa agir. */
+.lead-card { grid-template-columns: minmax(0, 1fr) clamp(128px, 13vw, 168px); grid-template-areas: "main score" "actions actions"; align-items: start; }
+.lead-card > .lead-main { grid-area: main; }
+.lead-card > .lead-score { grid-area: score; }
+.lead-card > .lead-actions { grid-area: actions; }
+.lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr) clamp(132px, 13vw, 176px); grid-template-areas: "main score" "actions actions"; }
+.px-card-score { display: grid; justify-items: end; align-content: start; gap: var(--px-s2); padding: 0 0 0 var(--px-s4); border-right: 0; border-left: 1px solid var(--px-edge); text-align: right; }
+.px-card-score-label { align-self: end; color: var(--px-text-2); }
+.px-card-score-num { font-size: var(--px-fs-score); color: var(--px-text); font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: 620; letter-spacing: -.05em; }
+.lead-card--primary .px-card-score-num { color: var(--px-accent); }
+.lead-card--primary .px-card-score { padding-left: var(--px-s5); }
+.px-card-score > small { color: var(--px-text); font-weight: var(--px-w-medium); }
+.px-card-bar { width: 100%; }
+.px-card-why { display: block; max-height: none; opacity: 1; color: var(--px-text-2); text-align: left; margin-top: var(--px-s1); }
+.lead-card--utility { grid-template-columns: minmax(0, 1fr) 96px; }
+.lead-card--utility .px-card-score { padding-left: var(--px-s3); }
+.lead-card--utility .px-card-score-label, .lead-card--utility .px-card-bar { display: none; }
+@media (max-width: 900px) {
+  .lead-card, .lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr); grid-template-areas: "score" "main" "actions"; }
+  .px-card-score { grid-auto-flow: column; align-items: center; justify-content: start; gap: var(--px-s3); padding: 0 0 var(--px-s3); border-left: 0; border-bottom: 1px solid var(--px-edge); text-align: left; }
+  .px-card-score-num { font-size: var(--px-fs-h1); }
+}
+
+/* ── 25. Caçar Leads: ONDE ESTOU → O QUE FAZER → O QUE ACONTECEU → PRÓXIMO PASSO ──
+   A página tinha todas essas informações, mas no mesmo tamanho. Agora cada turno tem um rótulo
+   mono e o resto recua; o próximo passo é calculado do estado real (loading / selecionadas /
+   adicionadas / vazio), então ele nunca promete algo que já aconteceu. */
+.px-step-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--px-s4); margin: var(--px-s6) 0 var(--px-s3); padding-bottom: var(--px-s2); border-bottom: 1px solid var(--px-edge-strong); }
+.px-step-kicker { display: inline-flex; align-items: center; gap: var(--px-s3); font: 600 var(--px-fs-h3)/1.1 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; color: var(--px-text); }
+.px-step-kicker b { font: 620 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-accent); letter-spacing: .06em; }
+.px-step-hint { font: 500 var(--px-fs-meta)/1.2 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--px-text-2); }
+.px-next-step { display: inline-flex; align-items: center; gap: var(--px-s2); margin: var(--px-s3) 0 0; width: fit-content; padding: var(--px-s2) var(--px-s3) var(--px-s2) var(--px-s2); border-radius: 99px; background: color-mix(in srgb, var(--px-accent) 12%, transparent); border: 1px solid color-mix(in srgb, var(--px-accent) 32%, transparent); font: 600 var(--px-fs-label)/1.1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; color: var(--px-text); }
+.px-next-step svg { color: var(--px-accent); }
+.hunt-form { background: var(--px-surface-1); box-shadow: var(--px-shadow-1); }
+.hunt-form label { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--px-text-2); }
+.hunt-card .hunt-score { font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: 620; letter-spacing: -.03em; color: var(--px-text); }
+.hunt-card > div > small { font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--px-text-2); }
+.hunt-card h3 { font-size: var(--px-fs-h3); font-weight: var(--px-w-title); letter-spacing: -.022em; }
+
+/* ── 26. microinterações que confirmam estado ───────────────────────────────────
+   A estrela dá um pop de 180 ms quando você a aperta (o estado real já mudou no clique);
+   a troca de tema pinta os planos grandes em 260 ms em vez de piscar o inteiro. Nada aqui
+   decora: cada uma responde "aconteceu o que eu acabei de fazer?". */
+.px-star:active { transform: scale(.9); }
+.px-star { transition: color var(--px-fast), background var(--px-fast), transform var(--px-fast) var(--px-ease); }
+html.px-theme-swap :is(body, .app-shell, .sidebar, .main-content, .topbar, .lead-card, .hunt-card, .px-rail-card, .hunt-form) { transition: background-color .26s var(--px-ease), color .26s var(--px-ease), border-color .26s var(--px-ease); }
+@media (prefers-reduced-motion: reduce) { .px-star:active { transform: none; } html.px-theme-swap :is(body, .app-shell, .main-content, .topbar) { transition: none; } }

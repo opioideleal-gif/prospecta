@@ -190,10 +190,35 @@ Detalhes de implementação:
   score. Não existe tamanho de fonte solto em `depth.css`: se um número não tem papel, ele não tem
   tamanho. E **borda significa interação**: card só tem anel quando é o principal, é prioridade sua
   ou está sendo olhado; o resto do agrupamento é espaço + fio de 1px + plano de fundo.
-- **Navegação:** a sidebar agrupa por fase do trabalho (`Discover / Leads / Intelligence / Outreach`)
-  a partir de `NAV_GROUPS`; o rail de seleção é medido no DOM (`navIndicator`) e, abaixo de 700px,
-  os grupos viram uma fila com snap no rodapé. O ponto laranja de "Caçar Leads" só acende quando
-  existe caça ainda não importada.
+- **Fonte:** uma família para ler e uma para dado — `Geist Variable` (UI inteira) e
+  `Geist Mono Variable` (números, rótulos de sistema, tempo). Vêm do `@fontsource-variable/*`
+  empacotado no build, não de CDN: sem link externo, sem flash de fonte errada, funciona offline.
+  Os pesos são os do eixo variável (`--px-w-text 430`, `-medium 550`, `-strong 620`, `-title 680`),
+  então corpo e rótulo diferem por peso de verdade em vez de brigar por tamanho. Trocar isso por
+  mais uma família é o caminho de volta para o app parecer montado por peças.
+- **Contraste:** medido, não opinado. `pnpm exec tsx scripts/contrast-audit.ts` lê os tokens de
+  `depth.css` (inclusive o bloco `html.dark`) e calcula a razão WCAG 2.1 dos pares que importam —
+  texto de página, secundário, meta, CTA, accent como texto, ok/warn/bad, ausência e separação de
+  plano. Meta: ≥ 4,5 para texto e ≥ 3 para rótulo; quando um plano não separa por luminância
+  (branco sobre branco no claro), o script mede o fio. Baseline da primeira rodada: **8 pares
+  reprovados no claro e 1 no escuro**, inclusive o botão primário ilegível (2,53:1); hoje **0 e 0**.
+  Rodar o script depois de mexer em cor é obrigatório pelo mesmo motivo do gerador de tema: olho
+  não mede.
+- **Navegação:** `NAV_GROUPS` é **um** grupo (`Workspace`: Início, Hoje, Caçar Leads, Resultados,
+  Leads, Oportunidades, Playbook) mais `Atalhos` com os três presets de caça — a ordem é a do dia
+  de trabalho, não a do pipeline interno. Item em 13,5px/550 com cor de leitura (foi o que tirou a
+  sidebar do "apagado"), badge mono à direita e o ativo com rail medido no DOM (`navIndicator`) +
+  `aria-current="page"`; abaixo de 700px os grupos viram uma fila com snap no rodapé. O ponto
+  laranja de "Caçar Leads" só acende quando existe caça ainda não importada.
+- **Card do lead:** a ordem do DOM é a ordem do olho — nome → contexto → score → sinais → próximo
+  passo. O score saiu da primeira coluna (era número solto sem procedência) e virou bloco próprio à
+  direita do título: rótulo, número mono de até 54px, veredito, barra e **os motivos sempre visíveis**
+  em `--px-text-2`. No tier `utility` o bloco encolhe para a lista continuar lendo rápido.
+- **Início:** composição assimétrica `1,62fr / 0,82fr` — o trabalho (hero + busca + trilho de
+  cinco passos) na coluna larga, o estado (buscas recentes + contagem da base) no rail. A busca é o
+  objeto mais importante da tela: 96px de altura, rótulo legível, CTA `HUNT →`, e ao receber foco
+  ela cresce um pouco, ilumina e **reduz o resto a 55%** enquanto você digita. O empty state é
+  editorial (frase + três sementes clicáveis + `Começar pela busca`), não um retângulo dashed gigante.
 - **Ficha:** cinco turnos de leitura — `Who → Signals → Why this lead → Next step → Log` — cada um
   com um linha dizendo o que aquele bloco responde, e o conteúdo entra escalonado depois do FLIP. O
   score não mora mais no cabeçalho gritando: mora em `--px-score-case`, colado nos motivos que o
@@ -209,7 +234,7 @@ Detalhes de implementação:
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
   as 7 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload,
-  mais a camada nova: Início como aba padrão, navegação agrupada por fase do trabalho,
+  mais a camada nova: Início como aba padrão, navegação em um Workspace + Atalhos com `aria-current`,
   trilho dos cinco passos com estado real, busca que mostra o melhor match antes das outras,
   falha de busca assumida no texto, estrela de prioridade que persiste e reordena, peso do card
   (primary/utility) por critério, sinal ainda marcado como cadastro quando a página não foi lida,

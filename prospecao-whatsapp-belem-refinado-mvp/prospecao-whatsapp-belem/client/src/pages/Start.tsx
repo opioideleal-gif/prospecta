@@ -12,6 +12,9 @@ type Insights = { total: number; researched: number; withOpportunity: number; st
  * um estado lido do que o sistema já sabe (busca digitada, resultado voltado, base pesquisada),
  * então a linha conta a filosofia e também onde você está nela agora.
  */
+/* sementes do empty state: sugestões de busca, nenhum dado inventado */
+const SEEDS = ["restaurantes em Belém", "lojas de roupa", "clínicas odontológicas"];
+
 const STEPS = [
   { key: "discover", now: "você diz o que procura: segmento, bairro, cidade" },
   { key: "find", now: "a busca varre fonte pública e traz empresas de Belém" },
@@ -86,10 +89,6 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
           <span className="px-wordmark" data-motion><i /> Prospecta · Belém</span>
           <h1 data-motion>Empresas que valem <em>uma conversa.</em></h1>
           <p data-motion>Você diz o que procura. O Prospecta caça em fonte pública, lê a página da empresa, separa o que encontrou do que é leitura dele e devolve uma primeira mensagem escrita para aquela empresa — não para qualquer empresa.</p>
-          <ol className="px-hero-steps" data-motion aria-label="Como o Prospecta trabalha">
-            {STEPS.map((step, index) => <li key={step.key} data-step={step.key} data-state={stateFor(step.key, query, hunting, results.length, insights)}><b>{String(index + 1).padStart(2, "0")}</b><span>{step.key}</span><p>{step.now}</p></li>)}
-          </ol>
-
           <div className={`px-search ${focused ? "is-focus" : ""}`} data-motion>
             <div className="px-search-inner">
               <div>
@@ -120,6 +119,49 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
 
           {error && <p className="px-hero-error">{error} — nada foi adicionado à sua carteira.</p>}
         </section>
+
+          <ol className="px-hero-steps" data-motion aria-label="Como o Prospecta trabalha">
+            {STEPS.map((step, index) => <li key={step.key} data-step={step.key} data-state={stateFor(step.key, query, hunting, results.length, insights)}><b>{String(index + 1).padStart(2, "0")}</b><span>{step.key}</span><p>{step.now}</p></li>)}
+          </ol>
+
+        <aside className="px-rail" data-motion>
+          <div className={`px-rail-card${recentSearches.length ? "" : " px-empty"}`}>
+            <span className="px-rail-kicker">Recent searches</span>
+            {recentSearches.length ? (
+              <ul className="px-rail-rows">
+                {recentSearches.slice(0, 4).map((entry) => (
+                  <li key={`${entry.query}-${entry.at}`}>
+                    <button onClick={() => { setQuery(entry.query); onHunt(entry.query); }}>
+                      <b>{entry.query}</b>
+                      <small>{formatDate(entry.at)} · {entry.found || "—"} encontradas · {entry.unique} nova(s) na época</small>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <>
+                <h3>Nenhuma busca ainda.</h3>
+                <p>A base existe, mas o motor de caça ainda não rodou. Nada aqui foi inventado para preencher o espaço.</p>
+                <span className="px-rail-sub">Comece por:</span>
+                <ul className="px-seeds">
+                  {SEEDS.map((seed) => <li key={seed}><button onClick={() => { setQuery(seed); input.current?.focus(); }}>{seed}</button></li>)}
+                </ul>
+                <button className="dark-action" onClick={() => input.current?.focus()}>Começar pela busca <ArrowRight size={14} /></button>
+              </>
+            )}
+          </div>
+          <div className="px-rail-card">
+            <span className="px-rail-kicker">Estado da base</span>
+            <p className="px-rail-lede">contados sobre o que existe, não estimados</p>
+            <ul className="px-rail-rows px-rail-rows--data">
+              <li><span>Na carteira</span><b>{insights.total}</b></li>
+              <li><span>Com evidência lida</span><b>{insights.researched}</b></li>
+              <li><span>Oportunidade escrita</span><b>{insights.withOpportunity}</b></li>
+              <li><span>Suas prioridades</span><b>{insights.starred}</b></li>
+            </ul>
+            <small className="px-rail-note">{insights.total ? `${Math.round((insights.researched / insights.total) * 100)}% da carteira foi lida no site` : "ainda nada foi lido no site de ninguém"}</small>
+          </div>
+        </aside>
 
         {results.length > 0 && (
           <section data-reveal>
@@ -158,63 +200,6 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
           </section>
         )}
 
-        <section data-reveal>
-          <div className="px-section-label"><h2>Recent searches</h2><span>{recentSearches.length ? "clique para rodar de novo" : "nenhuma busca ainda"}</span></div>
-          {recentSearches.length ? (
-            <div className="px-rows">
-              {recentSearches.slice(0, 4).map((entry) => (
-                <button className="px-row" key={`${entry.query}-${entry.at}`} onClick={() => { setQuery(entry.query); onHunt(entry.query); }}>
-                  <span className="px-row-num">{entry.found || "—"}</span>
-                  <span><b>{entry.query}</b><small>{formatDate(entry.at)} · {entry.unique} nova(s) na época</small></span>
-                  <ArrowRight size={14} />
-                </button>
-              ))}
-            </div>
-          ) : (
-            <div className="px-empty">
-              <h3>Nenhuma busca ainda</h3>
-              <p>Rode a primeira caçada acima para começar a montar sua carteira. O Prospecta salva aqui o que ele de fato encontrou — sem busca, sem lista.</p>
-              <button className="dark-action" onClick={() => input.current?.focus()}><Sparkles size={14} /> Começar pela busca</button>
-            </div>
-          )}
-        </section>
-
-        <section data-reveal>
-          <div className="px-section-label">
-            <h2>Recent leads</h2>
-            <button className="outline-button" onClick={onGoLeads}>Abrir carteira <ArrowUpRight size={13} /></button>
-          </div>
-          {recentLeads.length ? (
-            <div className="px-rows">
-              {recentLeads.map((lead, index) => (
-                <div className="px-row" key={lead.id} onClick={(e) => onOpenLead(lead, e.currentTarget as HTMLElement)}>
-                  <span className="px-row-num">{String(index + 1).padStart(2, "0")}</span>
-                  <span>
-                    <b>{lead.starred && <Star size={11} fill="currentColor" style={{ verticalAlign: "-1px", marginRight: 5, color: "var(--px-warn)" }} />}{lead.name}</b>
-                    <small>{lead.segment} · {lead.location} · {lead.facts?.fetchOk ? `${lead.interpretation?.opportunity ?? "site lido"}` : "site ainda não lido"}</small>
-                  </span>
-                  <span className="px-row-score"><b>{lead.score}</b><small>{scoreLabel(lead.score)}</small></span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="px-empty">
-              <h3>Sua carteira está vazia</h3>
-              <p>Ela começa com uma caçada ou com uma empresa cadastrada à mão. Os 157 contatos da base congelada continuam na aba Leads.</p>
-              <button className="dark-action" onClick={onGoHunt}><Search size={14} /> Cazar empresas</button>
-            </div>
-          )}
-        </section>
-
-        <section data-reveal>
-          <div className="px-section-label"><h2>Insights</h2><span>contados sobre o que existe, não estimados</span></div>
-          <div className="px-insights">
-            <div className="px-insight"><span>Na carteira</span><strong>{insights.total}</strong><small>empresas com algum dado de contato</small></div>
-            <div className="px-insight"><span>Com evidência lida</span><strong>{insights.researched}</strong><small>{insights.total ? `${Math.round((insights.researched / insights.total) * 100)}% da carteira foi lida no site` : "ainda nada foi lido — comece pela aba Leads"}</small></div>
-            <div className="px-insight px-insight--accent"><span>Oportunidade escrita</span><strong>{insights.withOpportunity}</strong><small>leads com leitura concluída e ganho identificado</small></div>
-            <div className="px-insight"><span>Suas prioridades</span><strong>{insights.starred}</strong><small>marcados com estrela por você</small></div>
-          </div>
-        </section>
       </div>
     </div>
   );
