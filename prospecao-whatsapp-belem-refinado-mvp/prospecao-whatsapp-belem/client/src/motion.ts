@@ -167,7 +167,18 @@ export function navIndicator(nav: HTMLElement | null, selector = ".nav-item.acti
  * texto escalado — é a diferença entre "o card se transformou" e "deu zoom estourado".
  */
 export function flipSurface(from: HTMLElement | null, to: HTMLElement | null, onDone?: () => void) {
-  if (!from || !to || !can() || reducedMotion()) {
+  const beats = to ? Array.from(to.querySelectorAll<HTMLElement>("[data-flip-content]")) : [];
+  if (!from || !to || !can()) {
+    // sem card de origem (a ficha abriu de outra lista) não há forma a animar — mas o conteúdo
+    // ainda entra em tempos, porque a leitura da ficha é uma investigação, não um despejo
+    if (to && can() && !reducedMotion() && beats.length) {
+      gsap.fromTo(beats, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.34, stagger: 0.1, ease: "power2.out", clearProps: "transform" });
+    }
+    onDone?.();
+    return;
+  }
+  if (reducedMotion()) {
+    gsap.set(beats, { clearProps: "opacity,visibility,transform" });
     onDone?.();
     return;
   }
@@ -177,12 +188,12 @@ export function flipSurface(from: HTMLElement | null, to: HTMLElement | null, on
     onDone?.();
     return;
   }
-  const inner = Array.from(to.querySelectorAll<HTMLElement>("[data-flip-content]"));
+  const inner = beats;
   gsap.set(to, { position: "fixed", top: first.top, left: first.left, width: first.width, height: first.height, margin: 0, borderRadius: gsap.getProperty(from, "border-radius") || 18, zIndex: 60 });
   gsap.set(inner, { autoAlpha: 0, y: 10 });
   const tl = gsap.timeline({ onComplete: () => { gsap.set(to, { clearProps: "position,top,left,width,height,margin,borderRadius,zIndex,transform" }); onDone?.(); } });
   tl.to(to, { top: last.top, left: last.left, width: last.width, height: last.height, borderRadius: 20, duration: 0.44, ease: "power3.inOut" }, 0);
-  tl.to(inner, { autoAlpha: 1, y: 0, duration: 0.32, stagger: 0.045, ease: "power2.out" }, 0.26);
+  tl.to(inner, { autoAlpha: 1, y: 12, duration: 0.34, stagger: 0.1, ease: "power2.out", clearProps: "transform" }, 0.26);
   return tl;
 }
 

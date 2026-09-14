@@ -615,7 +615,10 @@ describe("início, card e movimento (redesign)", () => {
     expect(q(".px-hero h1")?.textContent).toContain("Empresas que valem");
     expect(q("#px-hunt")).toBeTruthy();
     expect(q(".px-search-go")?.textContent).toMatch(/Hunt/i);
-    expect(qa(".px-hero-steps li").map((li) => li.textContent)).toEqual(["discover", "find", "understand", "decide", "reach out"]);
+    expect(qa(".px-hero-steps li").map((li) => li.getAttribute("data-step"))).toEqual(["discover", "find", "understand", "decide", "reach out"]);
+    // o trilho mostra estado real: sem busca digitada, "discover" é o passo atual e o resto espera
+    expect(qa(".px-hero-steps li").map((li) => li.getAttribute("data-state"))).toEqual(["now", "idle", "idle", "idle", "idle"]);
+    expect(qa(".px-hero-steps li p").every((p) => (p.textContent || "").length > 20)).toBe(true);
     expect(q(".px-empty h3")?.textContent).toContain("Nenhuma busca ainda");
     // sem caça rodada, nada na navegação finge atividade
     expect(q(".side-nav .nav-dot")).toBeNull();
@@ -645,6 +648,9 @@ describe("início, card e movimento (redesign)", () => {
     // a memória guarda o que o motor de fato procurou (segmento + cidade), não o texto cru
     // o indicador da sidebar só acende porque existe caça não importada — estado real
     expect(q(".side-nav .nav-dot")).toBeTruthy();
+    const states = qa(".px-hero-steps li").map((li) => li.getAttribute("data-state"));
+    expect(states.slice(0, 2)).toEqual(["done", "done"]);
+    expect(states.filter((x) => x === "idle")).toHaveLength(0);
     const memory = JSON.parse(localStorage.getItem("prospecta-searches-v1") || "[]");
     expect(memory[0].query).toContain("refrigeração");
     expect(memory[0].found).toBe(2);
@@ -716,6 +722,32 @@ describe("início, card e movimento (redesign)", () => {
     expect(steps[1].textContent).toMatch(/nenhuma oportunidade escrita ainda|possível ganho/);
     // e o rótulo diz o que a seção é, em inglês, sem tirar o português do lugar
     expect(document.querySelector(".rp-kicker")?.textContent).toMatch(/Signals|Why this lead|First contact/);
+  });
+  it("a ficha é uma investigação em tempos, não um painel de tudo", async () => {
+    await tab("Leads");
+    await click(q(".lead-card .more-button"));
+    expect(qa(".px-beat-group").map((b) => b.getAttribute("data-beat"))).toEqual(["1", "2", "3", "4", "5"]);
+    expect(qa(".px-beat-label span").map((s) => s.textContent)).toEqual(["Who", "Signals", "Why this lead", "Next step", "Log"]);
+    expect(q(".px-score-case .detail-score")).toBeTruthy();
+    expect(q(".px-score-case .score-reasons")).toBeTruthy();
+    const beats = qa(".px-beat-group").map((b) => b.textContent || "");
+    // cada turno carrega exatamente o que o nome dele promete — evidência, número, decisão
+    expect(beats[1]).toMatch(/Inteligência externa|DADOS ENCONTRADOS/);
+    expect(beats[2]).toMatch(/Motivos do score/);
+    expect(beats[3]).toMatch(/ABORDAGEM CONTEXTUAL/);
+    expect(beats[3]).toMatch(/Estágio no funil|Próxima ação/);
+    expect(beats[4]).toMatch(/Observações|HISTÓRICO/);
+    // o número não mora mais no cabeçalho gritando: mora junto dos motivos
+    expect(beats[0]).not.toMatch(/Motivos do score/);
+    // cada turno entra revelado por vez — o stagger é o que impede o "tudo ao mesmo tempo"
+    expect(qa(".detail-body [data-flip-content]").length).toBeGreaterThanOrEqual(5);
+  });
+  it("o número do card diz de onde veio quando o card é olhado", async () => {
+    await tab("Leads");
+    const why = q(".lead-card .px-card-why");
+    expect(why?.textContent).toBeTruthy();
+    expect(why?.textContent).not.toMatch(/undefined|NaN/);
+    expect(why?.textContent).toMatch(/base \d+ → \d+|heur|leia o site|evidência|Instagram|telefone/i);
   });
   it("tema escuro é o padrão e o vendedor pode voltar ao claro", async () => {
     localStorage.removeItem("theme");

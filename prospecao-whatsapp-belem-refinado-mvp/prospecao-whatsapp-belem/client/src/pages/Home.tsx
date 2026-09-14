@@ -381,7 +381,9 @@ function LeadModal({ lead, status, origin, onClose, onOpen, onOpenText, onPrepar
     <div className="modal-backdrop" onClick={close}>
       <div ref={panel} className="lead-modal lead-xray lead-detail" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close" onClick={close} aria-label="Fechar ficha"><X size={18} /></button>
-        <div className="detail-body" data-flip-content>
+        <div className="detail-body">
+            <section className="px-beat-group" data-beat="1" data-flip-content>
+              <h3 className="px-beat-label"><span>Who</span><p>quem é esta empresa e o que já sabemos dela sem ter lido nada</p></h3>
           <header className="detail-head">
             <div className={`avatar avatar-${lead.color}`}>{lead.initials}</div>
             <div className="detail-head-main">
@@ -389,23 +391,70 @@ function LeadModal({ lead, status, origin, onClose, onOpen, onOpenText, onPrepar
               <h2>{lead.name}</h2>
               <p className="modal-opportunity">{lead.segment} · {intel.subsegment} · {intel.businessModel}</p>
             </div>
-            <div className="detail-score">
-              <span>Score</span>
-              <strong>{lead.score}<small>/100</small></strong>
-              <em>{scoreLabel(lead.score)}</em>
-              <div className="score-bar"><i style={{ width: `${lead.score}%` }} /></div>
-            </div>
           </header>
             <div className="px-detail-steps" data-flip-content>
               <div className={lead.facts?.fetchOk ? "is-done" : ""}><span>Intelligence</span><b>{lead.facts ? (lead.facts.fetchOk ? `site lido em ${lead.facts.host}` : `site não respondeu (${lead.facts.httpStatus || "sem conexão"})`) : "site ainda não lido"}</b><em>{lead.facts?.fetchOk ? `${verified} fato(s) verificado(s)${lead.facts.checkedOtherUrl ? " em duas páginas" : ""}` : "Leia a página pública para trocar suposição por evidência"}</em></div>
               <div className={lead.interpretation?.opportunity ? "is-done" : ""}><span>Opportunity</span><b>{lead.interpretation?.opportunity ?? "nenhuma oportunidade escrita ainda"}</b><em>{lead.interpretation?.detectedProblems?.slice(0, 2).join(" · ") || "aparece depois da leitura"}</em></div>
               <div className={lead.approachDraft?.[lead.approachStyle ?? "Natural"] ? "is-done" : ""}><span>Outreach</span><b>{lead.approachStyle ?? "Natural"} · {lead.approachDraft?.[lead.approachStyle ?? "Natural"] ? "rascunho seu" : "mensagem gerada"}</b><em>{lead.phone ? "copie ou abra o WhatsApp quando fizer sentido" : "sem telefone: copie e envie por outro canal"}</em></div>
             </div>
+          <section className="detail-block">
+            <div className="detail-block-head"><h4>Contato disponível</h4><span>dados cadastrados, nada inferido</span></div>
+            <div className="contact-grid">
+              {fields.map((field) => <div key={field.label}><span>{field.label}</span>{field.value && field.href ? <a href={field.href} target="_blank" rel="noreferrer"><strong>{field.icon} {field.value}</strong></a> : field.value ? <strong>{field.icon} {field.value}</strong> : <strong className="missing">não cadastrado</strong>}</div>)}
+            </div>
+            {lead.pain && <p className="pain-line"><span>Dor cadastrada:</span> {lead.pain}</p>}
+          </section>
+            </section>
+            <section className="px-beat-group" data-beat="2" data-flip-content>
+              <h3 className="px-beat-label"><span>Signals</span><p>o que a página pública mostra — e o que ela não mostrou continua em branco</p></h3>
+          <div className="research-callout">
+            <div><strong>Inteligência externa</strong><span>{lead.research ? `Pesquisa concluída em ${formatDate(lead.research.lastResearchAt)} · ${lead.research.sources?.length ?? 0} fonte(s) · ${lead.research.signals?.length ?? 0} sinal(is)` : "Poucos sinais pesquisados neste lead."}</span></div>
+            <button className="outline-button" onClick={() => onResearch(lead, Boolean(lead.facts))} disabled={Boolean(lead.researchLoading)}>{lead.researchLoading ? <Loader2 size={14} className="animate-spin" /> : <Globe2 size={14} />} {lead.researchLoading ? "Pesquisando..." : lead.facts ? "Reler o site" : lead.research ? "Pesquisar novamente" : "Pesquisar empresa"}</button>
+          </div>
+          {lead.researchError && <div className="research-callout error-summary"><div><strong>Pesquisa indisponível</strong><span>{lead.researchError}</span></div><button className="outline-button" onClick={() => onResearch(lead, true)}>Tentar de novo</button></div>}
+          {(lead.research?.sources || []).map((source) => <div className="evidence-row" key={source.id}><div><b>FATO PESQUISADO</b><span>{source.claim}</span><small>{source.sourceTitle} · confiança {source.confidence}</small></div><a href={source.sourceUrl} target="_blank" rel="noreferrer">Ver fonte <ExternalLink size={11} /></a></div>)}
+          {lead.research?.signals?.length ? <div className="researched-signals"><h4>SINAIS ENCONTRADOS</h4>{lead.research.signals.map((signal) => <span key={signal}>{signal}</span>)}</div> : null}
+          <PresencePanel facts={lead.facts} />
+            </section>
+            <section className="px-beat-group" data-beat="3" data-flip-content>
+              <h3 className="px-beat-label"><span>Why this lead</span><p>de onde vem o número, o que ele significa e o que é hipótese</p></h3>
+              <div className="px-score-case">
+            <div className="detail-score">
+              <span>Score</span>
+              <strong>{lead.score}<small>/100</small></strong>
+              <em>{scoreLabel(lead.score)}</em>
+              <div className="score-bar"><i style={{ width: `${lead.score}%` }} /></div>
+            </div>
           <div className="score-reasons">
             <h4>Motivos do score{lead.scoreDeltas?.length ? ` · ${lead.scoreBase ?? lead.score}→${lead.score} depois da pesquisa` : ""}</h4>
             {(() => { const { lines: reasonLines, base: heuristicReasons } = scoreReasonLines(lead.scoreDeltas ?? [], intel.scoreReasons); const shown = reasonLines.length ? reasonLines : heuristicReasons; return <ul>{shown.map((reason) => <li key={reason}>{reason}</li>)}</ul>; })()}
             <span>{intel.confidence}% de confiança{lead.service ? ` · oferta sugerida: ${lead.service}` : ""}{!lead.facts ? " · score ainda sem evidência externa" : ""}</span>
           </div>
+              </div>
+          <InterpretationPanel interpretation={lead.interpretation} deltas={lead.scoreDeltas} base={lead.scoreBase} score={lead.score} />
+          <div className="xray-grid">
+            <section><h4>OBSERVADO</h4><ul>{intel.observedSignals.map((x) => <li key={x}>{x}</li>)}</ul></section>
+            <section><h4>PROVÁVEL</h4><ul>{intel.probablePains.map((x) => <li key={x}>{x}</li>)}</ul></section>
+            <section><h4>OPORTUNIDADE</h4><ul>{intel.opportunities.map((x) => <li key={x}>{x}</li>)}</ul></section>
+            <section><h4>RECOMENDADO</h4><ul>{intel.recommendedServices.map((x) => <li key={x}>{x}</li>)}</ul></section>
+          </div>
+            </section>
+            <section className="px-beat-group" data-beat="4" data-flip-content>
+              <h3 className="px-beat-label"><span>Next step</span><p>escrever a mensagem, mover o funil, marcar quando voltar</p></h3>
+          <ApproachPanel
+            approaches={approachesFor(lead)}
+            objective={lead.objective}
+            style={lead.approachStyle ?? "Natural"}
+            draft={lead.approachDraft?.[lead.approachStyle ?? "Natural"]}
+            hasPhone={Boolean(lead.phone)}
+            copied={copied === `approach-${lead.id}`}
+            onObjective={(value) => onUpdate(lead.id, { objective: value })}
+            onStyle={(value) => onUpdate(lead.id, { approachStyle: value })}
+            onDraft={(value) => onUpdate(lead.id, { approachDraft: { ...(lead.approachDraft ?? {}), [lead.approachStyle ?? "Natural"]: value } })}
+            onReset={() => onUpdate(lead.id, { approachDraft: { ...(lead.approachDraft ?? {}), [lead.approachStyle ?? "Natural"]: undefined } })}
+            onCopy={(text) => onCopy(`approach-${lead.id}`, text)}
+            onOpen={(text) => onOpenText(lead, text)}
+          />
           <div className="detail-cols">
             <section className="detail-block">
               <div className="detail-block-head"><h4>Estágio no funil</h4><span>{stageIndex + 1}/{statusOptions.length}</span></div>
@@ -434,42 +483,9 @@ function LeadModal({ lead, status, origin, onClose, onOpen, onOpenText, onPrepar
               </div>
             </section>
           </div>
-          <section className="detail-block">
-            <div className="detail-block-head"><h4>Contato disponível</h4><span>dados cadastrados, nada inferido</span></div>
-            <div className="contact-grid">
-              {fields.map((field) => <div key={field.label}><span>{field.label}</span>{field.value && field.href ? <a href={field.href} target="_blank" rel="noreferrer"><strong>{field.icon} {field.value}</strong></a> : field.value ? <strong>{field.icon} {field.value}</strong> : <strong className="missing">não cadastrado</strong>}</div>)}
-            </div>
-            {lead.pain && <p className="pain-line"><span>Dor cadastrada:</span> {lead.pain}</p>}
-          </section>
-          <div className="research-callout">
-            <div><strong>Inteligência externa</strong><span>{lead.research ? `Pesquisa concluída em ${formatDate(lead.research.lastResearchAt)} · ${lead.research.sources?.length ?? 0} fonte(s) · ${lead.research.signals?.length ?? 0} sinal(is)` : "Poucos sinais pesquisados neste lead."}</span></div>
-            <button className="outline-button" onClick={() => onResearch(lead, Boolean(lead.facts))} disabled={Boolean(lead.researchLoading)}>{lead.researchLoading ? <Loader2 size={14} className="animate-spin" /> : <Globe2 size={14} />} {lead.researchLoading ? "Pesquisando..." : lead.facts ? "Reler o site" : lead.research ? "Pesquisar novamente" : "Pesquisar empresa"}</button>
-          </div>
-          {lead.researchError && <div className="research-callout error-summary"><div><strong>Pesquisa indisponível</strong><span>{lead.researchError}</span></div><button className="outline-button" onClick={() => onResearch(lead, true)}>Tentar de novo</button></div>}
-          {(lead.research?.sources || []).map((source) => <div className="evidence-row" key={source.id}><div><b>FATO PESQUISADO</b><span>{source.claim}</span><small>{source.sourceTitle} · confiança {source.confidence}</small></div><a href={source.sourceUrl} target="_blank" rel="noreferrer">Ver fonte <ExternalLink size={11} /></a></div>)}
-          {lead.research?.signals?.length ? <div className="researched-signals"><h4>SINAIS ENCONTRADOS</h4>{lead.research.signals.map((signal) => <span key={signal}>{signal}</span>)}</div> : null}
-          <PresencePanel facts={lead.facts} />
-          <InterpretationPanel interpretation={lead.interpretation} deltas={lead.scoreDeltas} base={lead.scoreBase} score={lead.score} />
-          <div className="xray-grid">
-            <section><h4>OBSERVADO</h4><ul>{intel.observedSignals.map((x) => <li key={x}>{x}</li>)}</ul></section>
-            <section><h4>PROVÁVEL</h4><ul>{intel.probablePains.map((x) => <li key={x}>{x}</li>)}</ul></section>
-            <section><h4>OPORTUNIDADE</h4><ul>{intel.opportunities.map((x) => <li key={x}>{x}</li>)}</ul></section>
-            <section><h4>RECOMENDADO</h4><ul>{intel.recommendedServices.map((x) => <li key={x}>{x}</li>)}</ul></section>
-          </div>
-          <ApproachPanel
-            approaches={approachesFor(lead)}
-            objective={lead.objective}
-            style={lead.approachStyle ?? "Natural"}
-            draft={lead.approachDraft?.[lead.approachStyle ?? "Natural"]}
-            hasPhone={Boolean(lead.phone)}
-            copied={copied === `approach-${lead.id}`}
-            onObjective={(value) => onUpdate(lead.id, { objective: value })}
-            onStyle={(value) => onUpdate(lead.id, { approachStyle: value })}
-            onDraft={(value) => onUpdate(lead.id, { approachDraft: { ...(lead.approachDraft ?? {}), [lead.approachStyle ?? "Natural"]: value } })}
-            onReset={() => onUpdate(lead.id, { approachDraft: { ...(lead.approachDraft ?? {}), [lead.approachStyle ?? "Natural"]: undefined } })}
-            onCopy={(text) => onCopy(`approach-${lead.id}`, text)}
-            onOpen={(text) => onOpenText(lead, text)}
-          />
+            </section>
+            <section className="px-beat-group" data-beat="5" data-flip-content>
+              <h3 className="px-beat-label"><span>Log</span><p>o que já foi feito com esta empresa</p></h3>
           <section className="detail-block">
             <div className="detail-block-head"><h4>Observações</h4><span>salvam na ficha do lead</span></div>
             <label className="notes-box">Notas comerciais<textarea value={note} onChange={(e) => setNote(e.target.value)} onBlur={() => onUpdate(lead.id, { notes: note })} placeholder="Usa planilha; sócio decide; pediu retorno..." /></label>
@@ -483,6 +499,7 @@ function LeadModal({ lead, status, origin, onClose, onOpen, onOpenText, onPrepar
           <div className="context-actions">
             <button className="outline-button" onClick={() => onHunt(lead)}><Search size={14} /> Encontrar empresas parecidas</button>
           </div>
+            </section>
         </div>
         <div className="detail-actions">
           <button className="whatsapp-button large" onClick={() => onOpen(lead)}><MessageCircle size={17} /> Abrir WhatsApp</button>

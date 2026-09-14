@@ -7,6 +7,28 @@ import { formatDate, scoreLabel } from "@/intelligence";
 export type SearchMemory = { query: string; at: string; found: number; unique: number };
 type Insights = { total: number; researched: number; withOpportunity: number; starred: number; hot: number };
 
+/**
+ * A espinha do produto escrita na tela de entrada — não cinco palavras soltas. Cada passo recebe
+ * um estado lido do que o sistema já sabe (busca digitada, resultado voltado, base pesquisada),
+ * então a linha conta a filosofia e também onde você está nela agora.
+ */
+const STEPS = [
+  { key: "discover", now: "você diz o que procura: segmento, bairro, cidade" },
+  { key: "find", now: "a busca varre fonte pública e traz empresas de Belém" },
+  { key: "understand", now: "lemos a página da empresa e separamos fato de leitura" },
+  { key: "decide", now: "score com motivos; você escolhe o que entra na carteira" },
+  { key: "reach out", now: "primeira mensagem escrita para aquela empresa, sua antes de enviar" },
+] as const;
+type StepState = "idle" | "next" | "now" | "done";
+function stateFor(key: (typeof STEPS)[number]["key"], query: string, hunting: boolean, found: number, insights: Insights): StepState {
+  const typed = query.trim().length > 0;
+  if (key === "discover") return typed ? "done" : "now";
+  if (key === "find") return hunting ? "now" : found ? "done" : typed ? "next" : "idle";
+  if (key === "understand") return insights.researched ? "done" : found ? "now" : "idle";
+  if (key === "decide") return found || insights.withOpportunity ? "now" : "idle";
+  return found ? "next" : "idle";
+}
+
 type Props = {
   hunting: boolean;
   error?: string;
@@ -64,9 +86,9 @@ export function Start({ hunting, error, query, setQuery, onHunt, results, lastQu
           <span className="px-wordmark" data-motion><i /> Prospecta · Belém</span>
           <h1 data-motion>Empresas que valem <em>uma conversa.</em></h1>
           <p data-motion>Você diz o que procura. O Prospecta caça em fonte pública, lê a página da empresa, separa o que encontrou do que é leitura dele e devolve uma primeira mensagem escrita para aquela empresa — não para qualquer empresa.</p>
-          <ul className="px-hero-steps" data-motion>
-            <li>discover</li><li>find</li><li>understand</li><li>decide</li><li>reach out</li>
-          </ul>
+          <ol className="px-hero-steps" data-motion aria-label="Como o Prospecta trabalha">
+            {STEPS.map((step, index) => <li key={step.key} data-step={step.key} data-state={stateFor(step.key, query, hunting, results.length, insights)}><b>{String(index + 1).padStart(2, "0")}</b><span>{step.key}</span><p>{step.now}</p></li>)}
+          </ol>
 
           <div className={`px-search ${focused ? "is-focus" : ""}`} data-motion>
             <div className="px-search-inner">

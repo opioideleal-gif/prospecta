@@ -184,18 +184,33 @@ Detalhes de implementação:
   anteriores: fundo neutro vira superfície do sistema, fundo com intenção (follow-up vencido,
   confiança do resultado da caça) vira `color-mix` do mesmo matiz. Rodar o script de novo depois
   de mexer em cor é o caminho curto para o tema não divergir.
+- **Medida:** `depth.css` define `--px-s1…--px-s8` (4/8/12/16/24/32/48/64) e uma escala
+  tipográfica por **papel** — `--px-fs-display` é exclusivo do Início, `--px-fs-h1` abre as outras
+  abas, `--px-fs-num` é número secundário, `--px-fs-input` é o campo de busca, `--px-fs-score` é o
+  score. Não existe tamanho de fonte solto em `depth.css`: se um número não tem papel, ele não tem
+  tamanho. E **borda significa interação**: card só tem anel quando é o principal, é prioridade sua
+  ou está sendo olhado; o resto do agrupamento é espaço + fio de 1px + plano de fundo.
+- **Navegação:** a sidebar agrupa por fase do trabalho (`Discover / Leads / Intelligence / Outreach`)
+  a partir de `NAV_GROUPS`; o rail de seleção é medido no DOM (`navIndicator`) e, abaixo de 700px,
+  os grupos viram uma fila com snap no rodapé. O ponto laranja de "Caçar Leads" só acende quando
+  existe caça ainda não importada.
+- **Ficha:** cinco turnos de leitura — `Who → Signals → Why this lead → Next step → Log` — cada um
+  com um linha dizendo o que aquele bloco responde, e o conteúdo entra escalonado depois do FLIP. O
+  score não mora mais no cabeçalho gritando: mora em `--px-score-case`, colado nos motivos que o
+  produziram, porque número sem procedência é enfeite.
 - **Movimento:** `client/src/motion.ts` concentra GSAP (timeline, `stagger`, `Flip`,
   ScrollTrigger) e nada mais importa GSAP. A sequência de caça é campo expandindo → botão
   respondendo → filtros recuando → indicador ligado **no `fetch` real** → resultados em
   `stagger`; fechar a ficha devolve o painel ao card de origem (`returnSurface`). Com
   `prefers-reduced-motion` os elementos aparecem no estado final, sem deslocamento. Nenhum
   progresso é simulado: o que se move é o que o sistema está de fato fazendo.
-- **Testes:** `pnpm test` roda 115 casos em `client/src/__tests__/` e **nenhum deles toca a
+- **Testes:** `pnpm test` roda 118 casos em `client/src/__tests__/` e **nenhum deles toca a
   rede**: `pipeline.test.ts` faz o parser ler HTML de fixture e cobre pesquisa, normalização de
   telefone, aproveitamento dos dados, ausência que não vira afirmação, score com motivos, 3
   estilos, objetivo, histórico, mensagem editada, persistência, idempotência do score na releitura, e leitura de formatos reais de site (WordPress/Elementor, Nuvemshop, landing de Instagram, SPA Next.js); `flows.test.tsx` (happy-dom) cobre
   as 7 abas, filtros, ficha, ações rápidas, caça com ações por empresa, CSV, follow-up e reload,
-  mais a camada nova: Início como aba padrão, busca que mostra o melhor match antes das outras,
+  mais a camada nova: Início como aba padrão, navegação agrupada por fase do trabalho,
+  trilho dos cinco passos com estado real, busca que mostra o melhor match antes das outras,
   falha de busca assumida no texto, estrela de prioridade que persiste e reordena, peso do card
   (primary/utility) por critério, sinal ainda marcado como cadastro quando a página não foi lida,
   ida e volta do FLIP card → ficha e alternância de tema;

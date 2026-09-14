@@ -59,8 +59,10 @@ export function LeadCard({ lead, index, tier, statuses, statusOptions = [], scor
       <div className="lead-score px-card-score" title={scoreHint}>
         <span className="px-card-score-label">Score</span>
         <strong className="px-card-score-num" data-depth>{lead.score}</strong>
-        <div className="px-card-bar"><i style={{ width: `${lead.score}%` }} /></div>
         <small>{scoreLabel(lead.score)}{scoreTag}</small>
+        <div className="px-card-bar"><i style={{ width: `${lead.score}%` }} /></div>
+        {/* o número precisa dizer de onde veio sem popup e sem estado novo: uma linha, no hover */}
+        <small className="px-card-why">{(scoreHint || "").split(" · ").slice(0, 2).join(" · ") || "score heurístico · leia o site para justificar"}</small>
       </div>
 
       <div className="lead-main">

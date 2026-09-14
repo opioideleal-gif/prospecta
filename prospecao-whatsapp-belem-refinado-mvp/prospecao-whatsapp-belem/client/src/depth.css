@@ -519,3 +519,71 @@ html:not(.dark) :is(.rp-panel, .hunt-form, .hunt-card, .research-callout, .analy
   .px-side-nav .nav-count, .px-side-nav .nav-dot, .px-nav-rail { display: none; }
   .shortcut-list { display: none; }
 }
+
+/* ── 18. ficha em tempos: quem → sinais → por quê → próximo passo ──────────────
+   A ficha não é um painel de tudo ao mesmo tempo: é uma investigação que abre por camadas.
+   Cada beat é um plano (LEVEL 3 dentro do LEVEL 3) separado por ar, não por caixa, e o
+   conteúdo entra escalonado atrás do FLIP — a ordem do reveal é a ordem da leitura. */
+.px-beat-group { position: relative; display: grid; gap: var(--px-s3); }
+.px-beat-group + .px-beat-group { margin-top: var(--px-s2); padding-top: var(--px-s5); border-top: 1px solid var(--px-edge); }
+.px-beat-label { display: flex; align-items: baseline; gap: var(--px-s3); margin: 0; flex-wrap: wrap; }
+.px-beat-label span { font: 500 var(--px-fs-label)/1 "DM Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--px-accent); padding: 5px 8px; border-radius: var(--px-radius-xs); background: color-mix(in srgb, var(--px-accent) 12%, transparent); }
+.px-beat-label p { margin: 0; font-size: var(--px-fs-h3); line-height: 1.45; color: var(--px-text-2); max-width: 62ch; letter-spacing: -.008em; }
+.detail-body { gap: var(--px-s4); }
+.detail-head { padding: 0; border: 0; background: transparent; box-shadow: none; }
+/* número, barra e motivos no mesmo objeto: o score só faz sentido colado na explicação */
+.px-score-case { display: grid; grid-template-columns: minmax(0, 190px) minmax(0, 1fr); gap: var(--px-s4); align-items: start; padding: var(--px-s4); border-radius: var(--px-radius); background: var(--px-surface-1); box-shadow: inset 0 1px 0 var(--px-inner-light, rgba(255, 255, 255, .05)), var(--px-shadow-1); }
+html:not(.dark) .px-score-case { background: color-mix(in srgb, var(--px-surface-2) 70%, transparent); }
+.px-score-case .detail-score { display: grid; gap: var(--px-s1); justify-items: start; text-align: left; border: 0; padding: 0; }
+.px-score-case .detail-score > strong { font: 600 var(--px-fs-score)/.86 "Space Grotesk", sans-serif; letter-spacing: -.05em; color: var(--px-text); }
+.px-score-case .detail-score > span { font: 500 var(--px-fs-label)/1 "DM Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: var(--px-text-3); }
+.px-score-case .detail-score > em { font-style: normal; font: 600 var(--px-fs-meta)/1 "DM Mono", monospace; letter-spacing: .08em; text-transform: uppercase; color: var(--px-accent); }
+.px-score-case .score-bar { width: 100%; margin: var(--px-s2) 0 0; }
+.px-score-case .score-reasons { border: 0; background: transparent; padding: 0; box-shadow: none; margin: 0; }
+.px-score-case .score-reasons h4 { font: 500 var(--px-fs-label)/1 "DM Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: var(--px-text-3); }
+.px-score-case .score-reasons li { font-size: var(--px-fs-body); }
+@media (max-width: 900px) { .px-score-case { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 700px) {
+  .px-beat-group + .px-beat-group { padding-top: var(--px-s4); }
+  .px-beat-label p { font-size: var(--px-fs-body); }
+}
+
+/* o motivo do score no card: aparece quando o card é olhado, sem caixa nova e sem estado React */
+.px-card-why { display: block; margin-top: var(--px-s1); font: 500 var(--px-fs-meta)/1.35 "DM Mono", monospace; letter-spacing: .01em; color: var(--px-text-3); max-width: 22ch; overflow: hidden; max-height: 0; opacity: 0; transition: max-height var(--px-mid) var(--px-ease), opacity var(--px-mid); }
+.lead-card:hover .px-card-why, .lead-card:focus-within .px-card-why { max-height: 40px; opacity: 1; }
+.lead-card--utility .px-card-why { display: none; }
+
+/* ── 19. os cinco passos viram trilho: filosofia do produto com estado real ─────
+   Cada nó é um passo do trabalho, não uma pílula decorativa: o número é o eixo, o rótulo é o
+   que a pessoa faz, a linha embaixo é o que o sistema devolve. O estado (idle / next / now /
+   done) vem da busca digitada, do resultado que voltou e do que já foi pesquisado. */
+.px-hero-steps { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; list-style: none; margin: var(--px-s5) 0 0; padding: 0; counter-reset: none; }
+.px-hero-steps::before { content: ""; position: absolute; left: 10px; right: 10px; top: 11px; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 42%, transparent), var(--px-edge) 42%, var(--px-edge)); }
+.px-hero-steps li { position: relative; display: grid; gap: var(--px-s2); justify-items: start; padding: 0 var(--px-s3); }
+.px-hero-steps li + li { border-left: 1px solid var(--px-edge); }
+.px-hero-steps b { position: relative; z-index: 1; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font: 600 var(--px-fs-label)/1 "DM Mono", monospace; letter-spacing: .04em; background: var(--px-surface-2); color: var(--px-text-3); border: 1px solid var(--px-edge-strong); transition: color var(--px-mid) var(--px-ease), border-color var(--px-mid), box-shadow var(--px-mid), background var(--px-mid); }
+.px-hero-steps span { font: 600 var(--px-fs-meta)/1 "DM Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--px-text-3); transition: color var(--px-mid); }
+.px-hero-steps p { margin: 0; font-size: var(--px-fs-body); line-height: 1.45; color: var(--px-text-3); max-width: 26ch; transition: color var(--px-mid); }
+.px-hero-steps li[data-state="done"] b { background: color-mix(in srgb, var(--px-accent) 22%, var(--px-surface-2)); border-color: color-mix(in srgb, var(--px-accent) 55%, transparent); color: var(--px-accent); }
+.px-hero-steps li[data-state="done"] span { color: var(--px-text-2); }
+.px-hero-steps li[data-state="now"] b { background: var(--px-accent); border-color: transparent; color: var(--px-accent-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--px-accent) 16%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--px-accent) 55%, transparent); }
+html.dark .px-hero-steps li[data-state="now"] b { color: #0b1206; }
+.px-hero-steps li[data-state="now"] span { color: var(--px-text); }
+.px-hero-steps li[data-state="now"] p { color: var(--px-text-2); }
+.px-hero-steps li[data-state="now"] { animation: px-step-in var(--px-slow, .5s) var(--px-ease); }
+@keyframes px-step-in { from { transform: translateY(3px); } to { transform: none; } }
+@media (max-width: 1180px) {
+  .px-hero-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--px-s3) 0; }
+  .px-hero-steps::before { display: none; }
+  .px-hero-steps li { padding: 0 var(--px-s3) 0 0; }
+  .px-hero-steps li + li { border-left: 0; }
+}
+@media (min-width: 701px) and (max-width: 1180px) { .px-hero-steps li:nth-child(even) { border-left: 1px solid var(--px-edge); padding-left: var(--px-s3); } }
+@media (max-width: 700px) {
+  .px-hero-steps { grid-template-columns: minmax(0, 1fr); gap: var(--px-s3); }
+  .px-hero-steps li { grid-template-columns: 22px minmax(0, 1fr); align-items: start; column-gap: var(--px-s3); }
+  .px-hero-steps p { max-width: none; }
+  .px-hero-steps li > span { align-self: center; }
+  .px-hero-steps li > p { grid-column: 2; }
+}
+@media (prefers-reduced-motion: reduce) { .px-hero-steps li[data-state="now"] { animation: none; } }
