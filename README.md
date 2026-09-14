@@ -214,6 +214,17 @@ Detalhes de implementação:
   reprovados no claro e 1 no escuro**, inclusive o botão primário ilegível (2,53:1); hoje **0 e 0**.
   Rodar o script depois de mexer em cor é obrigatório pelo mesmo motivo do gerador de tema: olho
   não mede.
+- **Cascata resolvida, não presumida:** `scripts/cascade-check.ts` (`pnpm exec tsx
+  scripts/cascade-check.ts`) lê as quatro folhas na ordem real de `main.tsx`, resolve especificidade
+  por parte de seletor, `!important`, `@media` (o padrão é desktop 1360px) e `var()`/`color-mix()`/
+  `clamp(...vw...)`, e responde duas perguntas sobre 62 pontos da UI (cards, barra, busca, trilho,
+  ficha, caça): **`--dead`** lista declarações de topo 100% ofuscadas por uma regra idêntica mais
+  adiante — código morto que faz "mudei o token e nada aconteceu"; o modo padrão marca toda
+  propriedade em que `index`/`feature`/`operations` vencem o `depth.css` (era assim que o score da
+  caça vivia num `color:#759c2b !important` fora da paleta, e o título do card em 700 com tinta
+  própria). `--values` imprime o valor efetivo de cada alvo, e `cascade-check.ts "<nome>"` abre um
+  só, com quem mais escreve aquela propriedade. Serve de linha de base antes/depois de faxina no
+  CSS: a última rodada removeu 82 declarações mortas e o `--values` saiu byte a byte igual.
 - **Navegação:** `NAV_GROUPS` é **um** grupo (`Workspace`: Início, Hoje, Caçar Leads, Resultados,
   Leads, Oportunidades, Playbook) mais `Atalhos` com os três presets de caça — a ordem é a do dia
   de trabalho, não a do pipeline interno. Item em 13,5px/550 com cor de leitura (foi o que tirou a
