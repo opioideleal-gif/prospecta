@@ -57,6 +57,14 @@ describe("1. pesquisa devolve só o que a página tem, organizado por grupo", ()
     expect(verifiedFacts(facts).length).toBe(record.signals.length);
     expect(unverifiedFacts(facts).join(" ")).toMatch(/venda online|buscador/);
   });
+  it("sem leitura não devolve nenhuma oportunidade: afirmação exige fato encontrado", () => {
+    const dead = buildResearchRecord(parsePageFacts("", "https://morto.example", { fetchOk: false }), { name: "Morta" });
+    expect(dead.opportunities).toEqual([]);
+    expect(dead.signals).toEqual([]);
+    expect(dead.summary).toMatch(/0 fato\(s\) verificado\(s\)/);
+    // e com leitura normal a oportunidade aparece
+    expect(buildResearchRecord(facts, { name: "Padaria" }).opportunities.length).toBeGreaterThan(0);
+  });
   it("organiza a resposta nos 5 grupos do fluxo", () => {
     const record = buildResearchRecord(facts, emptyLead);
     expect(record.groups.map((g) => g.title)).toEqual(["IDENTIFICAÇÃO", "CONTATO", "PRESENÇA DIGITAL", "INFORMAÇÕES", "PRESENÇA COMERCIAL"]);

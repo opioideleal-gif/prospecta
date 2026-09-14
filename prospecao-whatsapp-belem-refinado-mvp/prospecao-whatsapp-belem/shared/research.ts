@@ -340,13 +340,16 @@ export function factGroups(facts: PageFacts): FactGroup[] {
 export function buildResearchRecord(facts: PageFacts, lead: { name: string; segment?: string }) {
   const signals = verifiedFacts(facts);
   const opportunities: string[] = [];
-  const noSite = facts.fetchOk === false;
-  if (facts.presence.catalog.state === "found" && facts.presence.ecommerce.state === "absent") opportunities.push("catálogo com pedido direto");
-  if (facts.presence.catalog.state === "absent" && !noSite) opportunities.push("cardápio/catálogo digital");
-  if (facts.presence.instagram.state === "found" && noSite) opportunities.push("presença digital própria além do Instagram");
-  if (facts.presence.whatsapp.state === "found") opportunities.push("atendimento por WhatsApp organizado com histórico");
-  if (facts.products?.length) opportunities.push("vitrine de produtos com orçamento");
-  if (!opportunities.length && noSite) opportunities.push("página comercial simples com contato");
+  const read = facts.fetchOk;
+  // Sem leitura bem-sucedida a lista fica vazia: oportunidade exige fato encontrado,
+  // e "não consegui ler" não é oportunidade nem diagnóstico.
+  if (read) {
+    if (facts.presence.catalog.state === "found" && facts.presence.ecommerce.state === "absent") opportunities.push("catálogo com pedido direto");
+    if (facts.presence.catalog.state === "absent") opportunities.push("cardápio/catálogo digital");
+    if (facts.presence.instagram.state === "found" && facts.presence.site.state === "absent") opportunities.push("presença digital própria além do Instagram");
+    if (facts.presence.whatsapp.state === "found") opportunities.push("atendimento por WhatsApp organizado com histórico");
+    if (facts.products?.length) opportunities.push("vitrine de produtos com orçamento");
+  }
   return {
     researchedAt: facts.retrievedAt,
     facts,
