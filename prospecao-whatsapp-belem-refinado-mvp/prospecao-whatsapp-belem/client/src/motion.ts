@@ -43,6 +43,27 @@ function can() {
 }
 
 /**
+ * Tier de viewport. Em tela estreita ou dedo (pointer: coarse) a coreografia encurta e o que é
+ * opcional desaparece: stagger longo numa lista de oito cards no celular é atraso percebido, não
+ * refinamento, e inclinação que segue ponteiro num toque vira card balançando durante a rolagem.
+ * O que nunca é cortado é informação — a UI entra no estado final em todos os tiers.
+ */
+const COMPACT = "(max-width: 880px), (pointer: coarse)";
+let compact = false;
+try {
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function") {
+    const mq = window.matchMedia(COMPACT);
+    compact = mq.matches;
+    mq.addEventListener?.("change", (e) => { compact = e.matches; });
+  }
+} catch {
+  compact = false;
+}
+export function compactMotion() {
+  return compact;
+}
+
+/**
  * Sequência de entrada: os elementos de um escopo entram em ordem, com deslocamento e
  * foco recuperando. Substitui o `gsap.to(el, {opacity:1})` genérico por uma linha do tempo
  * com ritmo — é isso que faz a tela parecer montada, não despejada.
@@ -56,8 +77,9 @@ export function enterSequence(scope: HTMLElement | null, selector = "[data-motio
   const ctx = gsap.context(() => {
     const items = gsap.utils.toArray<HTMLElement>(selector);
     if (!items.length) return;
-    const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: opts.duration ?? 0.52 } });
-    tl.from(items, { autoAlpha: 0, y: opts.y ?? 16, filter: "blur(6px)", stagger: opts.stagger ?? 0.07, delay: opts.delay ?? 0 }, 0);
+    const lite = compact;
+    const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: opts.duration ?? (lite ? 0.34 : 0.52) } });
+    tl.from(items, { autoAlpha: 0, y: opts.y ?? (lite ? 8 : 16), filter: lite ? "none" : "blur(6px)", stagger: opts.stagger ?? (lite ? 0.028 : 0.07), delay: opts.delay ?? 0 }, 0);
   }, scope);
   return () => ctx.revert();
 }
@@ -65,6 +87,15 @@ export function enterSequence(scope: HTMLElement | null, selector = "[data-motio
 /** ScrollTrigger nos trechos longos: cada bloco é revelado quando entra, uma vez só. */
 export function scrollReveal(scope: HTMLElement | null, selector = "[data-reveal]") {
   if (!scope || !can() || reducedMotion()) return () => {};
+  // sem ScrollTrigger no tier compacto: num scroll rápido, "revelar quando entrar" é como
+  // um bloco nascer invisível. Todos entram juntos, um fade curto, e nada depende de medida de layout.
+  if (compact) {
+    const ctxLite = gsap.context(() => {
+      const items = gsap.utils.toArray<HTMLElement>(selector);
+      if (items.length) gsap.from(items, { autoAlpha: 0, duration: 0.3, stagger: 0.02, ease: "power2.out" });
+    }, scope);
+    return () => ctxLite.revert();
+  }
   const ctx = gsap.context(() => {
     const items = gsap.utils.toArray<HTMLElement>(selector);
     items.forEach((el) => {
@@ -89,7 +120,8 @@ export function scrollReveal(scope: HTMLElement | null, selector = "[data-reveal
  * velocidades diferentes. Tudo por CSS var — nenhum re-render do React por quadro.
  */
 export function pointerDepth(el: HTMLElement, opts: { tilt?: number; shift?: number } = {}) {
-  if (!can() || reducedMotion()) return () => {};
+  // ponteiro grosso não tem "para onde o cursor está": sem hover, sem inclinação, sem custo de RAF
+  if (!can() || reducedMotion() || compact) return () => {};
   const maxTilt = opts.tilt ?? 2.2;
   const shift = opts.shift ?? 4;
   let raf = 0;
@@ -153,7 +185,7 @@ export function navIndicator(nav: HTMLElement | null, selector = ".nav-item.acti
   place(false);
   const onResize = () => place(false);
   window.addEventListener("resize", onResize);
-  // fonte do Space Grotesk chega depois do primeiro paint: sem isso o rail nasce medindo errado
+  // a fonte self-hosted ainda resolve depois do primeiro paint: sem isso o rail nasce medindo errado
   const raf = requestAnimationFrame(() => place(false));
   return () => {
     cancelAnimationFrame(raf);
@@ -167,8 +199,11 @@ export function navIndicator(nav: HTMLElement | null, selector = ".nav-item.acti
  * texto escalado — é a diferença entre "o card se transformou" e "deu zoom estourado".
  */
 export function flipSurface(from: HTMLElement | null, to: HTMLElement | null, onDone?: () => void) {
+  // no tier compacto a ficha já nasce ocupando a tela: morphar um retângulo de 360px em posição
+  // fixa é onde o FLIP costuma errar (scroll, barra de endereço), então entra só o conteúdo
+  const origin = compact ? null : from;
   const beats = to ? Array.from(to.querySelectorAll<HTMLElement>("[data-flip-content]")) : [];
-  if (!from || !to || !can()) {
+  if (!origin || !to || !can()) {
     // sem card de origem (a ficha abriu de outra lista) não há forma a animar — mas o conteúdo
     // ainda entra em tempos, porque a leitura da ficha é uma investigação, não um despejo
     if (to && can() && !reducedMotion() && beats.length) {
@@ -182,14 +217,14 @@ export function flipSurface(from: HTMLElement | null, to: HTMLElement | null, on
     onDone?.();
     return;
   }
-  const first = from.getBoundingClientRect();
+  const first = origin.getBoundingClientRect();
   const last = to.getBoundingClientRect();
   if (!first.width || !last.width) {
     onDone?.();
     return;
   }
   const inner = beats;
-  gsap.set(to, { position: "fixed", top: first.top, left: first.left, width: first.width, height: first.height, margin: 0, borderRadius: gsap.getProperty(from, "border-radius") || 18, zIndex: 60 });
+  gsap.set(to, { position: "fixed", top: first.top, left: first.left, width: first.width, height: first.height, margin: 0, borderRadius: gsap.getProperty(origin, "border-radius") || 18, zIndex: 60 });
   gsap.set(inner, { autoAlpha: 0, y: 10 });
   const tl = gsap.timeline({ onComplete: () => { gsap.set(to, { clearProps: "position,top,left,width,height,margin,borderRadius,zIndex,transform" }); onDone?.(); } });
   tl.to(to, { top: last.top, left: last.left, width: last.width, height: last.height, borderRadius: 20, duration: 0.44, ease: "power3.inOut" }, 0);
@@ -223,7 +258,7 @@ export function flipList(container: HTMLElement | null, mutate: () => void) {
   }
   const state = Flip.getState(container.querySelectorAll<HTMLElement>("[data-flip-item]"), { props: "opacity,transform" });
   mutate();
-  Flip.from(state, { duration: 0.42, ease: "power2.inOut", absolute: true, prune: true, onEnter: (els) => gsap.fromTo(els, { autoAlpha: 0, scale: 0.97 }, { autoAlpha: 1, scale: 1, duration: 0.3 }), onLeave: (els) => gsap.to(els, { autoAlpha: 0, duration: 0.18 }) });
+  Flip.from(state, { duration: compact ? 0.2 : 0.42, ease: "power2.inOut", absolute: true, prune: true, onEnter: (els) => gsap.fromTo(els, { autoAlpha: 0, scale: 0.97 }, { autoAlpha: 1, scale: 1, duration: 0.3 }), onLeave: (els) => gsap.to(els, { autoAlpha: 0, duration: 0.18 }) });
 }
 
 /**
@@ -252,9 +287,10 @@ export function revealResults(scope: HTMLElement | null, selector = "[data-resul
   const ctx = gsap.context(() => {
     const items = gsap.utils.toArray<HTMLElement>(selector);
     if (!items.length) return;
+    const lite = compact;
     const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
-    tl.from(items[0], { autoAlpha: 0, y: 26, scale: 0.985, duration: 0.55 });
-    tl.from(items.slice(1), { autoAlpha: 0, y: 16, duration: 0.4, stagger: 0.05 }, "-=0.24");
+    tl.from(items[0], { autoAlpha: 0, y: lite ? 12 : 26, scale: lite ? 1 : 0.985, duration: lite ? 0.34 : 0.55 });
+    if (items.length > 1) tl.from(items.slice(1), { autoAlpha: 0, y: lite ? 8 : 16, duration: lite ? 0.24 : 0.4, stagger: lite ? 0.02 : 0.05 }, lite ? "-=0.1" : "-=0.24");
   }, scope);
   return () => ctx.revert();
 }

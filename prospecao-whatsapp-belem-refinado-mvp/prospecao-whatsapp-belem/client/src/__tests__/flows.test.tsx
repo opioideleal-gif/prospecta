@@ -771,3 +771,44 @@ describe("início, card e movimento (redesign)", () => {
     localStorage.removeItem("theme");
   });
 });
+
+describe("turno de leitura em toda aba e tier de movimento", () => {
+  it("cada aba declara o que fazer ali e qual é o próximo passo real", async () => {
+    for (const name of ["Hoje", "Resultados", "Leads", "Oportunidades", "Playbook", "Caçar Leads"]) {
+      await tab(name);
+      expect(qa(".px-step-row").length, name).toBeGreaterThanOrEqual(1);
+      expect(text(), name).toMatch(/PRÓXIMO PASSO/);
+    }
+    // a frase não é cumprimento genérico: vem do estado da lista
+    await tab("Leads");
+    expect(q(".px-next-step")?.textContent).toMatch(/Abrir a ficha de|Nenhum lead|Cadastre ou importe/);
+    await tab("Hoje");
+    expect(q(".px-next-step")?.textContent).toMatch(/Atender|Trabalhar a fila|Nada pendente/);
+  });
+  it("em ponteiro grosso o card não inclina e a sequência encurta", async () => {
+    const original = window.matchMedia;
+    let matches = false;
+    const fake = (query: string) => ({ media: query, matches, addEventListener: () => {}, removeEventListener: () => {}, onchange: null, addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false });
+    (window as unknown as { matchMedia: unknown }).matchMedia = (query: string) => fake(query);
+    try {
+      vi.resetModules();
+      const fine = await import("@/motion");
+      expect(fine.compactMotion()).toBe(false);
+      matches = true;
+      vi.resetModules();
+      const compact = await import("@/motion");
+      expect(compact.compactMotion()).toBe(true);
+      const el = document.createElement("article");
+      host.appendChild(el);
+      const off = compact.pointerDepth(el);
+      el.dispatchEvent(new window.Event("pointermove", { bubbles: true }));
+      // sem o tier, o pointermove escreveria --px-tx/--px-ty no estilo do card
+      expect(el.style.getPropertyValue("--px-tx")).toBe("");
+      off();
+      el.remove();
+    } finally {
+      vi.resetModules();
+      (window as unknown as { matchMedia: unknown }).matchMedia = original;
+    }
+  });
+});

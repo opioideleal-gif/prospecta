@@ -196,6 +196,11 @@ Detalhes de implementação:
   Os pesos são os do eixo variável (`--px-w-text 430`, `-medium 550`, `-strong 620`, `-title 680`),
   então corpo e rótulo diferem por peso de verdade em vez de brigar por tamanho. Trocar isso por
   mais uma família é o caminho de volta para o app parecer montado por peças.
+- **Nenhum tamanho solto:** `grep` de `font-size: NNpx` / `font: … NNpx` nos quatro arquivos de
+  estilo devolve **zero** — 186 declarações de tamanho e 102 de raio caíram para a escala (a banda de
+  microtipografia, que tinha 12 valores entre 9,6 e 13,8px, virou label/meta/body), e os 14 raios
+  literais viraram os quatro tokens + `--px-radius-pill`. Regra prática ao mexer aqui: tamanho novo
+  só entra na escala, nunca no componente.
 - **Contraste:** medido, não opinado. `pnpm exec tsx scripts/contrast-audit.ts` lê os tokens de
   `depth.css` (inclusive o bloco `html.dark`) e calcula a razão WCAG 2.1 dos pares que importam —
   texto de página, secundário, meta, CTA, accent como texto, ok/warn/bad, ausência e separação de
@@ -223,7 +228,10 @@ Detalhes de implementação:
   com um linha dizendo o que aquele bloco responde, e o conteúdo entra escalonado depois do FLIP. O
   score não mora mais no cabeçalho gritando: mora em `--px-score-case`, colado nos motivos que o
   produziram, porque número sem procedência é enfeite.
-- **Movimento:** `client/src/motion.ts` concentra GSAP (timeline, `stagger`, `Flip`,
+- **Movimento:** `client/src/motion.ts` concentra GSAP. O tier `compact` (`(max-width: 880px),
+  (pointer: coarse)`, reavaliado em `change`) encurta stagger, troca ScrollTrigger por um fade
+  coletivo e **desliga o tilt por ponteiro** — em toque o card balançaria durante a rolagem, e o
+  FLIP de retângulo da ficha vira só a entrada do conteúdo, que é onde o morph costuma errar. (timeline, `stagger`, `Flip`,
   ScrollTrigger) e nada mais importa GSAP. A sequência de caça é campo expandindo → botão
   respondendo → filtros recuando → indicador ligado **no `fetch` real** → resultados em
   `stagger`; fechar a ficha devolve o painel ao card de origem (`returnSurface`). Com
