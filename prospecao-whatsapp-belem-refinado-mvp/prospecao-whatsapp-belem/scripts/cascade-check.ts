@@ -341,6 +341,68 @@ const TARGETS: [string, string][] = [
 ];
 
 
+/* ── modo --lint: a sintaxe que faz o CSS existir de verdade ──────────────────────────
+   Nenhum dos outros modos pega isto, e é justamente o erro que um patch mecânico comete: uma
+   declaração sem `;` dentro do bloco de tokens. O navegador não reclama — `--px-w-title: 700
+   --px-w-score: 780` é um valor de custom property VÁLIDO, então o token vira lixo, todo
+   `font: var(--px-w-title) …` cai por terra e a hierarquia de peso morre em silêncio. Foi assim que
+   o commit 048314a embarcou título sem negrito e `--px-w-score` inexistente com os três gates
+   verdes. Comentário não fechado é o irmão gêmeo: a regra seguinte passa a ser comentário. */
+if (process.argv.includes("--lint")) {
+  const problems: string[] = [];
+  const DECL = /(^|[;\n])\s*(--?[a-z-]+)\s*:/;
+  for (const [file, raw] of sources) {
+    const short = file.replace("client/src/", "");
+    let open = false;
+    let line = 1;
+    for (let i = 0; i < raw.length; i++) {
+      if (raw[i] === "\n") line++;
+      if (raw[i] === "/" && raw[i + 1] === "*") {
+        if (open) problems.push(`${short}:${line}  comentario dentro de comentario — o primeiro "*/" fecha cedo e o resto vira regra`);
+        open = true; i++;
+      } else if (raw[i] === "*" && raw[i + 1] === "/") {
+        if (!open) problems.push(`${short}:${line}  "*/" sem "/*" — existe regra sendo comida ali em cima`);
+        open = false; i++;
+      }
+    }
+    if (open) problems.push(`${short}:  comentario aberto ate o fim do arquivo`);
+
+    // pilha de blocos: um bloco pode conter regras filhas (@media) ou declarações — nunca os dois critérios juntos
+    const stack: { sel: string; buf: string; hasChild: boolean; startLine: number }[] = [];
+    let sel = "";
+    let ln = 1;
+    const txt = stripComments(raw);
+    for (let i = 0; i < txt.length; i++) {
+      const ch = txt[i];
+      if (ch === "\n") ln++;
+      if (ch === "{") { stack.push({ sel: sel.trim(), buf: "", hasChild: false, startLine: ln }); sel = ""; continue; }
+      if (ch === "}") {
+        const b = stack.pop();
+        if (!b) continue;
+        if (b.hasChild || b.sel.startsWith("@")) { sel = ""; continue; }
+        const body = b.buf;
+        if (!body.trim()) { problems.push(`${short}:${b.startLine}  corpo vazio (${b.sel.slice(0, 60)})`); sel = ""; continue; }
+        if (/;;/.test(body)) problems.push(`${short}:${b.startLine}  ";;" dentro de ${b.sel.slice(0, 40)}`);
+        for (const chunk of body.split(";")) {
+          const m = chunk.match(/\S[^;{]*?\n\s*(?:--?[a-z-]+)\s*:/);
+          if (m && !/[()]|url\(|data:/.test(chunk.slice(0, m.index!))) {
+            problems.push(`${short}:${b.startLine}  falta ";" antes da proxima declaracao em "${b.sel.slice(0, 34)}" → "${chunk.trim().slice(0, 44)}…"`);
+          }
+          if (/--[\w-]+\s*:[^;]*--[\w-]+\s*:/.test(chunk)) problems.push(`${short}:${b.startLine}  token definido DENTRO do valor em "${b.sel.slice(0, 34)}"`);
+        }
+        sel = "";
+        continue;
+      }
+      if (stack.length) stack[stack.length - 1].buf += ch;
+      else sel += ch;
+      if (ch === "}" || ch === ";") { if (stack.length) { /* noop */ } }
+    }
+  }
+  if (!problems.length) console.log("════ lint css: 0 problemas — comentarios fechados, declaracoes terminadas, corpos vivos ════");
+  else { for (const pr of [...new Set(problems)]) console.log("  ✗ " + pr); console.log(`\n════ lint css: ${[...new Set(problems)].length} problema(s) ════`); }
+  process.exit(0);
+}
+
 /* ── modo --dead: declarações 100% ofuscadas por uma regra idêntica mais adiante ───────
    Mesmo seletor, mesmo arquivo, mesma propriedade, nenhum :hover/atributo/meio no meio → a
    primeira é código morto. É a sujeira que faz "mexi no token e não apareceu na tela". */

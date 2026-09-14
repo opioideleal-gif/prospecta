@@ -76,16 +76,13 @@
   --px-fs-input: clamp(18px, 1.9vw, 25px);
   --px-fs-num: 22px;
   --px-fs-score: clamp(34px, 3.8vw, 54px);
-  /* pesos da fonte variável: o conjunto aprovado é 400/500/600/700 (+780 nos números); o eixo
-     variável existe para ajustar detalhe, não para inventar degrau novo — foi assim que 430/550/620
-     viraram regra, e regra que ninguém lê é regra que ninguém mantém. */
-  /* (a linha abaixo era só a justificativa antiga; os tokens estão logo em seguida) */
-     desenhada em vez de negritada no marcao */
+  /* Pesos: o conjunto aprovado é 400 corpo / 500 navegação / 600 seção / 700 título, com 780 só
+     para número grande. O eixo variável existe para ajustar detalhe, não para inventar degrau. */
   --px-w-text: 400;
   --px-w-medium: 500;
   --px-w-strong: 600;
-  --px-w-title: 700
-  --px-w-score: 780;   /* número grande: 700–800, como especificado */;
+  --px-w-title: 700;
+  --px-w-score: 780;
   /* ritmo vertical: 8 passos derivados de 4 */
   --px-s1: 4px; --px-s2: 8px; --px-s3: 12px; --px-s4: 16px;
   --px-s5: 24px; --px-s6: 32px; --px-s7: 48px; --px-s8: 64px;
@@ -274,7 +271,6 @@ html.dark .whatsapp-button:hover { background: #223040;}
 /* ── 6. HERO / INÍCIO — "comece aqui" ──────────────────────────────────── */
 .px-start { display: grid; gap: var(--px-s6); padding: var(--px-s5) var(--px-s1) var(--px-s8); max-width: 1120px;}
 .px-hero { position: relative; padding: clamp(30px, 5vw, 68px) 0 8px; display: grid; gap: var(--px-s5);}
-.px-hero::after { content: ""; position: absolute; height: 62%; z-index: -1; background: radial-gradient(50% 60% at 50% 0%, color-mix(in srgb, var(--px-accent) 16%, transparent), transparent 70%); filter: blur(26px);}
 .px-wordmark { display: inline-flex; align-items: center; gap: var(--px-s3); font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .26em; text-transform: uppercase; color: var(--px-text-3);}
 .px-wordmark i { width: 7px; height: 7px; border-radius: 50%; background: var(--px-accent); box-shadow: 0 0 12px var(--px-accent);}
 .px-hero h1 { margin: 0; font: 600 var(--px-fs-display)/1.01 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.04em; color: var(--px-text); max-width: 19ch;}
@@ -316,7 +312,6 @@ html.dark .whatsapp-button:hover { background: #223040;}
 .px-row-num { font: 500 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text-3);}
 
 /* ── 7. LEAD CARD: composição, não tabela ─────────────────────────────── */
-.lead-list { gap: var(--px-s3);}
 .lead-card {
   position: relative; isolation: isolate; overflow: hidden; gap: var(--px-s4);
   padding: var(--px-s4); border-radius: var(--px-radius);
@@ -337,16 +332,6 @@ html.dark .whatsapp-button:hover { background: #223040;}
 html.dark .px-card-tag { color: #0b1206;}
 .px-card-tag.is-warm { background: color-mix(in srgb, var(--px-warn) 88%, transparent); color: #1b1305;}
 .px-card-tag.is-cool { background: var(--px-hl); color: var(--px-text-2); border: 1px solid var(--px-edge);}
-.px-signals { display: flex; flex-wrap: wrap; gap: var(--px-s1) var(--px-s2); margin-top: var(--px-s3);}
-.px-signal { display: inline-flex; align-items: center; gap: var(--px-s1); font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .07em; text-transform: uppercase; color: var(--px-text-2); border: 1px solid var(--px-edge); border-radius: var(--px-radius-xs); padding: var(--px-s1) var(--px-s2); background: var(--px-hl);}
-.px-signal i { width: 5px; height: 5px; border-radius: 50%; background: var(--px-absent);}
-.px-signal--found { color: var(--px-text); border-color: color-mix(in srgb, var(--px-ok) 34%, var(--px-edge)); background: color-mix(in srgb, var(--px-ok) 10%, transparent);}
-.px-signal--found i { background: var(--px-ok); box-shadow: 0 0 8px color-mix(in srgb, var(--px-ok) 70%, transparent);}
-.px-signal--inferred { color: var(--px-text-2); border-color: color-mix(in srgb, var(--px-warn) 32%, var(--px-edge)); background: color-mix(in srgb, var(--px-warn) 9%, transparent);}
-.px-signal--inferred i { background: var(--px-warn);}
-.px-signal--listed i { background: var(--px-text-3);}
-.px-signal--absent { color: var(--px-text-3);}
-.px-signal--absent i { background: transparent; border: 1px solid var(--px-absent);}
 .px-card-count { font-size: var(--px-fs-meta); color: var(--px-text-2);}
 .px-card-count b { color: var(--px-text); font-weight: 600;}
 .px-card-next { display: inline-flex; align-items: center; gap: var(--px-s2); border: 0; background: transparent; color: var(--px-text-2); font: 600 var(--px-fs-meta)/1 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: .05em; text-transform: uppercase; cursor: pointer; padding: var(--px-s2) 0; transition: color var(--px-fast), gap var(--px-fast);}
@@ -381,6 +366,10 @@ html:not(.dark) .modal-backdrop { background: rgba(16, 26, 42, .42);}
 .rp-panel:hover { border-color: var(--px-edge-strong); box-shadow: var(--px-shadow-2);}
 .rp-row, .evidence-row, .rp-text { transition: background var(--px-fast);}
 .rp-row:hover, .evidence-row:hover { background: var(--px-hl);}
+/* um CTA dominante por tela: dentro da barra de ações da ficha, "Gerar abordagem" deixa de ser o
+   segundo botão sólido da fileira e passa a ser o mais forte dos secundários — quem fecha o loop é
+   "Abrir WhatsApp", que já está isolado à esquerda e em tamanho grande. */
+.detail-actions .dark-action { background: transparent; border: 1px solid var(--px-edge-strong); color: var(--px-text-primary);}
 .detail-actions { backdrop-filter: var(--px-blur); background: color-mix(in srgb, var(--px-surface-2) 84%, transparent); border-top-color: var(--px-edge);}
 
 /* ── 9. microinterações de estado ──────────────────────────────────────── */
@@ -404,7 +393,8 @@ html:not(.dark) .modal-backdrop { background: rgba(16, 26, 42, .42);}
 /* ── 11. responsivo: desktop primeiro, mobile de verdade ───────────────── */
 .px-nav-toggle { display: none;}
 @media (max-width: 1180px) {
-  .lead-card > .lead-score, .lead-card > .lead-actions { grid-column: 2;}
+  /* score e ações não são mais filhos diretos do card (mudaram de casa na seção 32), então só o
+     que ainda existe fica aqui: o número deita ao lado da barra quando o card estreita */
   .px-card-score { flex-direction: row;}
 }
 @media (max-width: 1024px) {
@@ -455,7 +445,6 @@ html.dark .stage-now .status-pill, html.dark .status-pill { background: var(--px
 
 /* ── 14. retoques: alternância de tema, estado de busca e o resumo da ficha ── */
 .px-card-score { text-align: left;}
-.px-theme { display: inline-flex; align-items: center; gap: var(--px-s2); border: 1px solid var(--px-edge); background: var(--px-surface-1); color: var(--px-text-2); border-radius: var(--px-radius-sm); padding: var(--px-s2) var(--px-s3); font: 500 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .04em; cursor: pointer; transition: color var(--px-fast), border-color var(--px-fast), transform var(--px-fast);}
 .px-theme:hover { color: var(--px-text); border-color: var(--px-edge-strong); transform: translateY(-1px);}
 .px-hero-error { margin: 0; color: var(--px-bad); font-size: var(--px-fs-meta);}
 .px-search-summary { margin: -2px 0 14px; font-size: var(--px-fs-body); color: var(--px-text-2);}
@@ -601,40 +590,13 @@ html:not(.dark) .px-score-case { background: color-mix(in srgb, var(--px-surface
 }
 
 /* o motivo do score no card: aparece quando o card é olhado, sem caixa nova e sem estado React */
-.px-card-why { display: block; margin-top: var(--px-s1); font: 500 var(--px-fs-meta)/1.35 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .01em; color: var(--px-text-3); max-width: 22ch; overflow: hidden; max-height: 0; opacity: 0; transition: max-height var(--px-mid) var(--px-ease), opacity var(--px-mid);}
 .lead-card:hover .px-card-why, .lead-card:focus-within .px-card-why { max-height: 40px; opacity: 1;}
 .lead-card--utility .px-card-why { display: none;}
 
-/* ── 19. os cinco passos viram trilho: filosofia do produto com estado real ─────
-   Cada nó é um passo do trabalho, não uma pílula decorativa: o número é o eixo, o rótulo é o
-   que a pessoa faz, a linha embaixo é o que o sistema devolve. O estado (idle / next / now /
-   done) vem da busca digitada, do resultado que voltou e do que já foi pesquisado. */
-.px-hero-steps { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; list-style: none; margin: var(--px-s5) 0 0; padding: 0; counter-reset: none;}
-.px-hero-steps::before { content: ""; position: absolute; left: 10px; right: 10px; top: 11px; height: 1px; background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 42%, transparent), var(--px-edge) 42%, var(--px-edge));}
-.px-hero-steps li { position: relative; display: grid; gap: var(--px-s2); justify-items: start;}
-.px-hero-steps b { position: relative; z-index: 1; border-radius: 50%; display: grid; place-items: center; background: var(--px-surface-2); color: var(--px-text-3); border: 1px solid var(--px-edge-strong); transition: color var(--px-mid) var(--px-ease), border-color var(--px-mid), box-shadow var(--px-mid), background var(--px-mid);}
-.px-hero-steps span { font: 600 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; text-transform: uppercase; transition: color var(--px-mid);}
-.px-hero-steps p { margin: 0; line-height: 1.45; transition: color var(--px-mid);}
-.px-hero-steps li[data-state="done"] b { background: color-mix(in srgb, var(--px-accent) 22%, var(--px-surface-2)); border-color: color-mix(in srgb, var(--px-accent) 55%, transparent); color: var(--px-accent);}
-.px-hero-steps li[data-state="done"] span { color: var(--px-text-2);}
-.px-hero-steps li[data-state="now"] b { background: var(--px-accent); border-color: transparent; color: var(--px-accent-ink); box-shadow: 0 0 0 4px color-mix(in srgb, var(--px-accent) 16%, transparent), 0 6px 18px -6px color-mix(in srgb, var(--px-accent) 55%, transparent);}
-html.dark .px-hero-steps li[data-state="now"] b { color: #0b1206;}
-.px-hero-steps li[data-state="now"] span { color: var(--px-text);}
-.px-hero-steps li[data-state="now"] p { color: var(--px-text-2);}
-.px-hero-steps li[data-state="now"] { animation: px-step-in var(--px-slow, .5s) var(--px-ease);}
-@keyframes px-step-in { from { transform: translateY(3px);} to { transform: none;}}
-@media (max-width: 1180px) {
-  .px-hero-steps::before { display: none;}
-  .px-hero-steps li { padding: 0 var(--px-s3) 0 0;}
-}
-@media (min-width: 701px) and (max-width: 1180px) { .px-hero-steps li:nth-child(even) { border-left: 1px solid var(--px-edge); padding-left: var(--px-s3);}}
-@media (max-width: 700px) {
-  .px-hero-steps { grid-template-columns: minmax(0, 1fr); gap: var(--px-s3);}
-  .px-hero-steps li { grid-template-columns: 22px minmax(0, 1fr); align-items: start; column-gap: var(--px-s3);}
-  .px-hero-steps li > span { align-self: center;}
-  .px-hero-steps li > p { grid-column: 2;}
-}
-@media (prefers-reduced-motion: reduce) { .px-hero-steps li[data-state="now"] { animation: none;}}
+/* ── 19. os cinco passos: filosofia do produto com estado real ──────────────
+   O desenho está na seção 32 (linha do tempo tipográfica + fio de acento). Aqui só ficava o
+   resto da versão anterior — disco escuro, keyframe sem dono, overrides de grid que a seção 32
+   já refaz. Regra que sobra de uma encarnação é regra que alguém "conserta" duas vezes. */
 
 /* ── 20. sidebar legível: item de navegação é texto, não legenda ───────────────
    Os itens estavam em 12,5px com cinza de metadata — por isso pareciam desativados. Agora:
@@ -664,7 +626,7 @@ html.dark .px-side-nav .nav-count.lime-count { color: var(--px-accent); border-c
 .px-data-state { font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; color: var(--px-text-2); border-color: var(--px-edge); background: var(--px-surface-1); padding: 7px 11px;  display: inline-flex;}
 .px-data-state svg { color: var(--px-ok);}
 /* pílula de tema: a célula acesa é o tema em uso; a outra é o que o clique faz */
-.px-theme { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--px-radius-pill); background: var(--px-surface-1); box-shadow: inset 0 0 0 1px var(--px-edge);}
+.px-theme { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: var(--px-radius-pill); background: var(--px-surface-1); box-shadow: inset 0 0 0 1px var(--px-edge); border: 1px solid var(--px-edge); color: var(--px-text-2); font: 500 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .04em; cursor: pointer; transition: color var(--px-fast), border-color var(--px-fast), transform var(--px-fast);}
 .px-theme-cell { display: inline-flex; align-items: center; gap: 6px; border: 1px solid transparent; background: transparent; color: var(--px-text-tertiary); font-weight: var(--px-w-medium); border-radius: var(--px-radius-pill); cursor: pointer; font: var(--px-w-strong) var(--px-fs-meta)/1 "Geist Variable", sans-serif; letter-spacing: .06em; text-transform: uppercase; transition: color var(--px-fast), background var(--px-fast), transform var(--px-fast) var(--px-ease);  padding: 5px 10px;}
 .px-theme-cell:hover { color: var(--px-text); background: var(--px-hl);}
 .px-theme-cell:active { transform: scale(.97);}
@@ -685,20 +647,17 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-hero > p { color: var(--px-text); font-weight: var(--px-w-text);}
 .px-hero h1 { font-weight: var(--px-w-title);}
 
-/* o trilho de passos vira leitura continua: 01 DISCOVER → 02 FIND → ... */
-/* o tamanho do número, o peso do rótulo e a cor da frase passaram a viver na seção do trilho; aqui
-   ficaria uma segunda opinião sobre o mesmo pixel, que é como um ajuste para de funcionar */
-.px-hero-steps p { color: var(--px-text-tertiary);}
-.px-hero-steps li[data-state="now"] p { color: var(--px-text);}
-.px-hero-steps li + li::before { position: absolute; left: -5px; top: 3px; margin: 0; color: var(--px-text-3); font: 400 var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace;}
-@media (max-width: 1180px) { .px-hero-steps li + li::before { display: none;}}
+/* o trilho de passos vira leitura contínua: 01 DISCOVER → 02 FIND → ... — número, rótulo e frase
+   são tipografia; o que marca o passo é o fio de acento e o estado lido do sistema, não um disco. */
 
 /* a busca é o objeto mais importante da tela — altura, presença, rótulo legível, CTA largo */
 .px-search { transition: box-shadow var(--px-mid), transform var(--px-mid) var(--px-ease);}
-.px-search-inner { padding: var(--px-s5) var(--px-s5) var(--px-s5) var(--px-s6); gap: var(--px-s4); min-height: 96px; align-items: center;  grid-template-columns: minmax(0, 1fr) auto;}
+.px-search-inner { gap: var(--px-s4); align-items: center; grid-template-columns: minmax(0, 1fr) auto;}
 .px-search label { color: var(--px-text-tertiary); font-weight: var(--px-w-title); letter-spacing: .14em; margin-bottom: var(--px-s3);}
 .px-search input { font-size: clamp(20px, 2vw, 27px); letter-spacing: -.028em; font-weight: 500;}
-.px-search input::placeholder { color: var(--px-text-3); opacity: .8;}
+/* placeholder e texto de apoio: cor real, nunca alpha — opacidade muda o contraste do fundo
+   junto e é exatamente o truque que apaga texto em tela clara */
+.px-search input::placeholder { color: var(--px-text-muted);}
 .px-search.is-focus { box-shadow: var(--px-shadow-3), var(--px-glow), 0 0 0 1px color-mix(in srgb, var(--px-accent) 34%, transparent); transform: translateY(-2px);}
 .px-search.is-focus .px-search-inner { background: var(--px-surface-3);}
 .px-search.is-focus input { color: var(--px-text);}
@@ -706,12 +665,10 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .px-search-go:hover { transform: translateY(-2px);}
 /* quando a busca assume, o que recua é o FIO decorativo do trilho. Texto informativo nunca entra em
    opacity:.55 — opacidade alta sobre texto pequeno é justamente o "apagado" que não é hierarquia. */
-.px-hero-steps::before { transition: opacity var(--px-slow) var(--px-ease);}
-.px-start:has(.px-search.is-focus) .px-hero-steps::before { opacity: .3;}
+.px-start:has(.px-search.is-focus) :is(.px-hero-steps, .px-rail, .px-wordmark) { filter: saturate(.72);}
 
 /* rail lateral: estado, não painel de métricas */
 .px-rail { display: grid; gap: var(--px-s5); align-content: start;}
-.px-rail-card { display: grid; gap: var(--px-s3); padding: var(--px-s5); border-radius: var(--px-radius); background: var(--px-surface-1); border-top: 1px solid var(--px-edge-strong); box-shadow: var(--px-shadow-1);}
 .px-rail-kicker { font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; color: var(--px-text-tertiary);}
 .px-rail-lede, .px-rail-note { margin: 0; font-size: var(--px-fs-meta); line-height: 1.5; color: var(--px-text-2);}
 .px-rail-sub { font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .15em; text-transform: uppercase; color: var(--px-text-tertiary);}
@@ -745,11 +702,20 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
    primeira coluna (onde era só um número solto) e virou um bloco próprio à direita do título:
    rótulo, número, veredito, barra e os motivos logo abaixo — visíveis, não escondidos no hover,
    porque "por que 88" é a pergunta que faz a pessoa agir. */
-.lead-card { grid-template-columns: minmax(0, 1fr) clamp(128px, 13vw, 168px); grid-template-areas: "main score" "actions actions"; align-items: start;}
-.lead-card > .lead-main { grid-area: main;}
-.lead-card > .lead-score { grid-area: score;}
-.lead-card > .lead-actions { grid-area: actions;}
-.lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr) clamp(132px, 13vw, 176px); grid-template-areas: "main score" "actions actions";}
+.lead-card { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "main" "foot"; align-content: start;}
+.lead-card > .lead-head { grid-area: head; display: flex; align-items: flex-start; justify-content: space-between; gap: var(--px-s4) var(--px-s5);}
+.lead-card > .lead-main { grid-area: main; display: grid; grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr); gap: var(--px-s4) clamp(24px, 3.4vw, 56px);}
+/* as duas colunas do corpo são uma peça só: o que separa é fio dentro da gutter, não caixa em volta.
+   O traço mora no meio do vão (margin/padding simétricos), assim nenhuma das duas perde medida. */
+@media (min-width: 901px) {
+  .lead-card > .lead-main > .lead-col + .lead-col {
+    border-left: 1px solid var(--px-edge);
+    padding-left: calc(clamp(24px, 3.4vw, 56px) / 2);
+    margin-left: calc(clamp(24px, 3.4vw, 56px) / -2);
+  }
+}
+.lead-card > .lead-foot { grid-area: foot; display: flex; align-items: center; justify-content: space-between; gap: var(--px-s3) var(--px-s4); padding-top: var(--px-s3); border-top: 1px solid var(--px-edge);}
+.lead-card--primary .lead-main { grid-template-columns: minmax(0, 1.24fr) minmax(0, 1fr);}
 .px-card-score { display: grid; justify-items: end; align-content: start; border-right: 0;  border-left: 1px solid var(--px-edge); gap: var(--px-s2); padding: 0 0 0 var(--px-s4); text-align: right;}
 .px-card-score-label { align-self: end; color: var(--px-text-2);}
 .px-card-score-num { color: var(--px-text); font-variant-numeric: tabular-nums; font-family: "Geist Mono Variable", ui-monospace, monospace; font-weight: var(--px-w-score); letter-spacing: -.05em;  font-size: var(--px-fs-score);}
@@ -757,12 +723,16 @@ html.dark .px-theme-cell[aria-pressed="true"] { background: color-mix(in srgb, v
 .lead-card--primary .px-card-score { padding-left: var(--px-s5);}
 .px-card-score > small { color: var(--px-text); font-weight: var(--px-w-medium);}
 .px-card-bar { width: 100%;}
-.px-card-why { display: block; max-height: none; opacity: 1; color: var(--px-text-2); text-align: left; margin-top: var(--px-s1);}
-.lead-card--utility { grid-template-columns: minmax(0, 1fr) 96px;}
+.px-card-why { display: block; max-height: none; opacity: 1; color: var(--px-text-2); text-align: left; margin-top: var(--px-s1); font: 500 var(--px-fs-meta)/1.35 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .01em; max-width: 22ch; overflow: hidden; transition: max-height var(--px-mid) var(--px-ease), opacity var(--px-mid);}
+.lead-card--utility .lead-main { grid-template-columns: minmax(0, 1fr); gap: var(--px-s2);}
 .lead-card--utility .px-card-score { padding-left: var(--px-s3);}
 .lead-card--utility .px-card-score-label, .lead-card--utility .px-card-bar { display: none;}
 @media (max-width: 900px) {
-  .lead-card, .lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr); grid-template-areas: "score" "main" "actions";}
+  .lead-card, .lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "main" "foot";}
+  .lead-card > .lead-main { grid-template-columns: minmax(0, 1fr);}}
+@media (max-width: 620px) {
+  .lead-card > .lead-head { flex-wrap: wrap;}
+  .px-card-score { border-left: 0; padding-left: 0; justify-items: start;}
   .px-card-score { grid-auto-flow: column; align-items: center; justify-content: start; gap: var(--px-s3); padding: 0 0 var(--px-s3); border-left: 0; border-bottom: 1px solid var(--px-edge); text-align: left;}
   .px-card-score-num { font-size: var(--px-fs-h1);}
 }
@@ -827,14 +797,6 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
    continuou viva depois do trilho de 5 nós: esticada pela grid, cada li virou um estádio cinza
    e a frase de estado quebrou uma palavra por linha. O li volta a ser só um li — quem marca o
    passo é o número, o fio e o estado. */
-.px-hero-steps li { border: 0; border-radius: 0; background: none; padding: 0 var(--px-s4); font: inherit; letter-spacing: 0; text-transform: none; color: var(--px-text-2); align-content: start;}
-.px-hero-steps li + li { border-left: 1px solid var(--px-edge);}
-.px-hero-steps li + li::before { content: none;}
-.px-hero-steps p { font: var(--px-w-text) var(--px-fs-meta)/1.45 "Geist Variable", "Inter", system-ui, sans-serif; letter-spacing: -.004em; text-transform: none; max-width: 22ch;}
-.px-hero-steps b { width: 22px; height: 22px; font: 600 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: 0;}
-.px-hero-steps span { font-size: var(--px-fs-label); font-weight: var(--px-w-title); letter-spacing: .14em; color: var(--px-text-tertiary);}
-.px-hero-steps li[data-state="now"] span { color: var(--px-text);}
-.px-hero-steps li[data-state="idle"] p { color: var(--px-text-muted);}
 .px-search { background: linear-gradient(150deg, var(--px-edge-strong), color-mix(in srgb, var(--px-accent) 38%, var(--px-edge-strong)));}
 .px-search-state.is-error { color: var(--px-bad);}
 .px-search-state.is-error i { animation: none; background: var(--px-bad);}
@@ -844,7 +806,6 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
    horizontal é o que faz a página inteira ganhar barra de rolagem lateral. clip não cria
    contêiner de rolagem no eixo vertical, então a ficha e o sticky seguem funcionando. */
 .page-content { overflow-x: clip;}
-.px-hero::after { inset: auto -4% -38% -4%;}
 
 /* o erro fala a língua da pessoa e mostra a resposta crua do provedor embaixo, no mesmo bloco:
    title de mouse não é acessível por teclado e esconder a resposta seria fingir clareza */
@@ -889,3 +850,93 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
 .rp-panel .rp-absent .rp-state { color: var(--px-text-3);}
 .rp-panel .rp-deltas b.up { color: var(--px-ok);}
 .rp-panel .rp-deltas b.down { color: var(--px-bad);}
+
+/* ── 32. direção artística: command center, linha do processo, sinal como registro ────
+   Medido antes de escrito: a Home tinha 3 caixas independentes (busca + 2 painéis do rail) e o
+   trilho tinha um disco decorativo por passo. Menos caixas e menos círculos; a relação entre as
+   partes passa a ser feita de alinhamento, fio e espaço — que é o que separa produto editorial de
+   painel administrativo.
+
+   1. O rail direito deixa de ser card. Fundo, raio e borda saem; sobra um fio vertical que diz
+      "isto é a outra coluna da mesma peça". Em telas abaixo de 1080px o fio sai junto, porque sem
+      duas colunas não há relação a marcar.
+   2. Os cinco passos viram linha do tempo: número tipográfico (sem disco), rótulo em caixa alta,
+      uma frase de corpo, e um fio de acento que se desenha na entrada. O GSAP mexe em UMA
+      propriedade decorativa (--px-draw); sem ele — movimento reduzido ou tier compacto — o fio já
+      chega traçado, então a animação nunca é condição para entender a tela.
+   3. O sinal do lead deixa de ser pílula e vira registro: `+ PHONE`, `PHONE · INFERIDO`,
+      `PHONE · NÃO ENCONTRADO`. A palavra carrega o estado; a cor só acelera. Isso derruba 4 bordas,
+      4 raios e 2 sombras por card, e mantém o rigor DADOS / INTERPRETAÇÃO / AUSENTE intacto. */
+
+/* busca: mais área (é o objeto, não o campo) e foco com realce contextual — rótulo sobe de degrau,
+   o fio do rodáculo aquece; nenhum texto entra em opacity */
+.px-search-inner { min-height: 122px; padding: var(--px-s6) var(--px-s6) var(--px-s5) var(--px-s7);}
+.px-search.is-focus .px-search label { color: var(--px-text);}
+.px-search.is-focus .px-search-foot { border-top-color: color-mix(in srgb, var(--px-accent) 34%, var(--px-edge));}
+.px-search-foot { border-top: 1px solid var(--px-edge); transition: border-color var(--px-mid);}
+
+/* trilho: as 5 células respiram por dentro e se separam por fio, não por caixa.
+   .px-rail e .px-hero-steps consomem --px-draw (motion.ts drawLine): as duas linhas da tela se
+   desenham na entrada e, sem movimento, já chegam tracadas. */
+.px-rail::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  border-left: 1px solid var(--px-line-strong);
+  transform: scaleY(var(--px-draw, 1));
+  transform-origin: center top;
+}
+.px-hero-steps { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; list-style: none; margin: clamp(34px, 4.2vw, 58px) 0 0; padding: var(--px-s5) 0 0; border-top: 1px solid var(--px-edge);}
+.px-hero-steps li { position: relative; display: block; padding: 0 var(--px-s4) 0 0;}
+.px-hero-steps li + li { border-left: 1px solid var(--px-edge); padding-left: var(--px-s4);}
+.px-hero-steps b { display: block; margin-bottom: var(--px-s3); font: var(--px-w-score) var(--px-fs-meta)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .08em; color: var(--px-text-muted); transition: color var(--px-mid);}
+.px-hero-steps span { display: block; margin-bottom: var(--px-s2); font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; color: var(--px-text-tertiary); transition: color var(--px-mid);}
+.px-hero-steps p { margin: 0; max-width: 26ch; font-size: var(--px-fs-body); line-height: 1.5; color: var(--px-text-secondary); transition: color var(--px-mid);}
+.px-hero-steps li[data-state="done"] b { color: var(--px-text);}
+.px-hero-steps li[data-state="done"] span { color: var(--px-text-tertiary);}
+.px-hero-steps li[data-state="now"] b { color: var(--px-accent);}
+.px-hero-steps li[data-state="now"] span { color: var(--px-text);}
+.px-hero-steps li[data-state="now"] p { color: var(--px-text);}
+.px-hero-steps li[data-state="idle"] p { color: var(--px-text-muted);}
+.px-hero-steps::after { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; transform: scaleX(var(--px-draw, 1)); transform-origin: left center; background: linear-gradient(90deg, color-mix(in srgb, var(--px-accent) 70%, transparent), color-mix(in srgb, var(--px-accent) 12%, transparent) 70%, transparent);}
+@media (max-width: 700px) {
+  .px-hero-steps { grid-template-columns: minmax(0, 1fr); gap: var(--px-s4); border-top: 0;}
+  .px-hero-steps li { padding: 0 0 0 var(--px-s4); border-left: 1px solid var(--px-edge);}
+  .px-hero-steps li + li { padding-left: var(--px-s4);}
+  .px-hero-steps::after { display: none;}
+}
+
+/* lead card: as duas colunas do corpo e o registro de sinais */
+.lead-col { min-width: 0; display: grid; gap: var(--px-s2); align-content: start;}
+.px-block-label { display: flex; align-items: center; gap: var(--px-s2); font: var(--px-w-title) var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .17em; text-transform: uppercase; color: var(--px-text-muted);}
+.px-block-label::before { content: ""; flex: 0 0 auto; width: 14px; height: 1px; background: var(--px-edge-strong);}
+.px-signals { display: grid; grid-template-columns: repeat(auto-fill, minmax(11ch, max-content)); gap: var(--px-s1) var(--px-s3); margin-top: var(--px-s1);}
+.px-signal { display: inline-flex; align-items: baseline; gap: 5px; padding: 0; border: 0; background: none; border-radius: 0; font: 500 var(--px-fs-label)/1.2 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .06em; text-transform: uppercase; color: var(--px-text-tertiary);}
+.px-signal-mark { color: var(--px-ok); font-weight: var(--px-w-title);}
+.px-signal-word { font-style: normal; color: var(--px-text-muted); letter-spacing: .1em;}
+.px-signal--found { color: var(--px-text-secondary);}
+.px-signal--found .px-signal-mark { color: var(--px-ok);}
+.px-signal--inferred { color: var(--px-text-tertiary);}
+.px-signal--inferred .px-signal-word { color: var(--px-warn);}
+.px-signal--listed .px-signal-word, .px-signal--absent, .px-signal--absent .px-signal-word { color: var(--px-text-muted);}
+.lead-col--read .opportunity { margin: 0; font-size: var(--px-fs-body); line-height: 1.5; color: var(--px-text-secondary);}
+.lead-col--read .opportunity strong { color: var(--px-text); font-weight: var(--px-w-strong);}
+.lead-col--read .px-card-count { margin: 0; font-size: var(--px-fs-meta); color: var(--px-text-tertiary);}
+.lead-id { min-width: 0;}
+
+/* hover: elevação mínima, número reage, CTA ganha presença. O tilt continua em 2,2° (motion.ts) */
+.lead-card:hover .px-card-score-num { color: var(--px-accent);}
+.lead-card:hover .whatsapp-button { box-shadow: var(--px-glow); transform: translateY(-1px);}
+.lead-card:hover .px-card-next { color: var(--px-accent);}
+.px-card-score-num, .whatsapp-button { transition: color var(--px-mid) var(--px-ease), box-shadow var(--px-mid) var(--px-ease), transform var(--px-fast) var(--px-ease);}
+
+/* espaçamento: mais ar em volta do que é grupo, menos entre o que é da mesma frase */
+.lead-list { gap: var(--px-s4);}
+.px-rail { position: relative; padding-left: clamp(24px, 3vw, 48px);}
+.px-rail-card { padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none;}
+.px-rail-card + .px-rail-card { padding-top: clamp(26px, 3vw, 42px); border-top: 1px solid var(--px-edge);}
+@media (max-width: 1080px) {
+  .px-rail { padding-left: 0;}
+  .px-rail::before { display: none;}
+  .px-rail-card + .px-rail-card { padding-top: var(--px-s4);}
+}

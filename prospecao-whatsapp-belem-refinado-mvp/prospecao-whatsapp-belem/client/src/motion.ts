@@ -295,6 +295,27 @@ export function revealResults(scope: HTMLElement | null, selector = "[data-resul
   return () => ctx.revert();
 }
 
+/**
+ * Traça um fio. A linha do tempo do Inicio e a espinha do trilho existem para dizer "existe uma
+ * ordem", entao elas se desenham no proprio eixo em vez de aparecer — eixo 13 do brief. Uma
+ * variavel so (`--px-draw`) sobe de 0 a 1 e o CSS faz o trabalho com
+ * `transform: scale*(var(--px-draw, 1))`; sem GSAP, com movimento reduzido ou em viewport compacto
+ * o valor vai direto a 1, porque o papel da linha e explicar a sequencia e um tracado pela metade
+ * nao explica nada.
+ */
+export function drawLine(scope: HTMLElement | null, selector = "[data-draw]", opts: { duration?: number; delay?: number } = {}) {
+  if (!scope || !can()) return () => {};
+  const els = Array.from(scope.querySelectorAll<HTMLElement>(selector));
+  if (!els.length) return () => {};
+  if (reducedMotion() || compactMotion()) {
+    for (const el of els) el.style.setProperty("--px-draw", "1");
+    return () => {};
+  }
+  const tl = gsap.timeline({ delay: opts.delay ?? 0 });
+  tl.fromTo(els, { "--px-draw": 0 }, { "--px-draw": 1, duration: opts.duration ?? 0.72, ease: "power2.inOut" }, 0);
+  return () => { tl.kill(); for (const el of els) el.style.removeProperty("--px-draw"); };
+}
+
 /** Microinteração de confirmação: botão de copiar, favoritar, chip de estágio. */
 export function pop(el: HTMLElement | null, opts: { scale?: number } = {}) {
   if (!el || !can() || reducedMotion()) return;

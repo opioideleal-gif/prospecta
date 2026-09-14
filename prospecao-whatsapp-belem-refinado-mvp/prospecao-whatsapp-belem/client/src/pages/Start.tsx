@@ -125,7 +125,7 @@ export function Start({ hunting, error, errorDetail, query, setQuery, onHunt, re
             {STEPS.map((step, index) => <li key={step.key} data-step={step.key} data-state={stateFor(step.key, query, hunting, results.length, insights)}><b>{String(index + 1).padStart(2, "0")}</b><span>{step.key}</span><p>{step.now}</p></li>)}
           </ol>
 
-        <aside className="px-rail" data-motion>
+        <aside className="px-rail" data-motion data-draw>
           <div className={`px-rail-card${recentSearches.length ? "" : " px-empty"}`}>
             <span className="px-rail-kicker">Recent searches</span>
             {recentSearches.length ? (
