@@ -83,7 +83,7 @@ const PAIRS: Array<{ label: string; fg: string; bg: string; min: number; scope: 
   { label: "meta/label", fg: "--px-text-3", bg: "--px-surface-2", min: 3, scope: "meta" },
   { label: "meta em painel", fg: "--px-text-3", bg: "--px-surface-1", min: 3, scope: "meta" },
   { label: "CTA: tinta sobre accent", fg: "--px-accent-ink", bg: "--px-accent", min: 4.5, scope: "button" },
-  { label: "link/rótulo accent em card", fg: "--px-accent", bg: "--px-surface-2", min: 3, scope: "label" },
+  { label: "link/rótulo accent em card (URL de evidência incluída)", fg: "--px-accent", bg: "--px-surface-2", min: 4.5, scope: "label" },
   { label: "sinal confirmado (ok)", fg: "--px-ok", bg: "--px-surface-2", min: 3, scope: "label" },
   { label: "atenção (warn) em meta", fg: "--px-warn", bg: "--px-surface-2", min: 3, scope: "label" },
   { label: "erro (bad) em painel", fg: "--px-bad", bg: "--px-surface-1", min: 3, scope: "label" },

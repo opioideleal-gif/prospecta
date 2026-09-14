@@ -21,7 +21,7 @@
   /* quatro degraus de texto, todos acima de 4,5:1 — "apagado" não é hierarquia, é defeito */
   --px-text: #101a2b;
   --px-text-2: #48586f;
-  --px-text-3: #69788d;
+  --px-text-3: #5b6a80;   /* 4,68 no canvas, 5,35 no card: o terceiro nível continua terceiro, só que legível */
   --px-accent: #527d0d;
   --px-accent-ink: #ffffff;
   --px-ok: #1f7d55;
@@ -277,7 +277,7 @@ html.dark .whatsapp-button:hover { background: #223040;}
 .px-search-foot { display: flex; flex-wrap: wrap; align-items: center; gap: var(--px-s2) var(--px-s4); padding: var(--px-s3) var(--px-s4) var(--px-s3); background: var(--px-surface-1); border-top: 1px solid var(--px-edge); font-size: var(--px-fs-meta); color: var(--px-text-2);}
 .px-search-foot b { color: var(--px-text); font-weight: 600;}
 .px-scan { position: absolute; left: 18px; right: 18px; bottom: -1px; height: 2px; border-radius: var(--px-radius-pill); background: var(--px-accent); transform: scaleX(0); transform-origin: left center; opacity: 0; box-shadow: 0 0 12px color-mix(in srgb, var(--px-accent) 70%, transparent);}
-.px-search-state { display: inline-flex; align-items: center; gap: var(--px-s2); font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--px-text-3);}
+.px-search-state { display: inline-flex; align-items: center; gap: var(--px-s2); font: 500 var(--px-fs-label)/1 "Geist Mono Variable", ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--px-text-2);}
 .px-search-state.is-live { color: var(--px-accent);}
 .px-search-state i { width: 6px; height: 6px; border-radius: 50%; background: currentColor;}
 @keyframes px-breathe { 0%, 100% { opacity: .35; transform: scale(.86);} 50% { opacity: 1; transform: scale(1);}}
@@ -296,9 +296,9 @@ html.dark .whatsapp-button:hover { background: #223040;}
 /* ── 7. LEAD CARD: composição, não tabela ─────────────────────────────── */
 .lead-list { gap: var(--px-s3);}
 .lead-card {
-  position: relative; isolation: isolate; overflow: hidden; align-items: stretch; gap: var(--px-s4);
-  grid-template-columns: 84px minmax(0, 1fr) 214px; padding: var(--px-s4); border-radius: var(--px-radius);
-  background: var(--px-surface-2); border: 1px solid var(--px-edge); box-shadow: var(--px-shadow-1);
+  position: relative; isolation: isolate; overflow: hidden; gap: var(--px-s4);
+  padding: var(--px-s4); border-radius: var(--px-radius);
+  background: var(--px-surface-2); border: 1px solid var(--px-edge);
   transform-style: preserve-3d; perspective: 720px;
   transition: transform var(--px-mid) var(--px-ease), box-shadow var(--px-mid) var(--px-ease), border-color var(--px-fast);
 }
@@ -333,7 +333,8 @@ html.dark .px-card-tag { color: #0b1206;}
 .px-star:hover { color: var(--px-warn); background: var(--px-hl);}
 .px-star[aria-pressed="true"] { color: var(--px-warn);}
 /* ritmo de composição: o principal respira, o utilitário encolhe */
-.lead-card--primary { grid-template-columns: 96px minmax(0, 1fr) 230px; padding: var(--px-s5); border-color: color-mix(in srgb, var(--px-accent) 26%, var(--px-edge)); box-shadow: var(--px-shadow-2);}
+/* só o respiro é do card principal; a borda de destaque é a linha de superfície (abaixo) */
+.lead-card--primary { padding: var(--px-s5);}
 .lead-card--primary .px-card-score-num { font-size: calc(var(--px-fs-h1) * 1.14);}
 .lead-card--utility { padding: var(--px-s3) var(--px-s4); opacity: .88;}
 .lead-card--utility .px-card-score-num { font-size: var(--px-fs-num);}
@@ -786,7 +787,7 @@ html.px-theme-swap :is(body, .app-shell, .sidebar, .main-content, .topbar, .lead
 .sidebar .nav-item, .sidebar .shortcut-list button { color: var(--px-side-text);}
 .sidebar .nav-item:hover, .sidebar .shortcut-list button:hover { color: var(--px-side-strong); background: var(--px-side-hover);}
 .sidebar .nav-item.active { color: var(--px-side-strong); background: var(--px-side-active); box-shadow: none;}
-.sidebar .nav-count { color: var(--px-side-meta); background: var(--px-side-hover);}
+.sidebar .nav-count { color: var(--px-side-text); background: var(--px-side-hover);}
 .sidebar .sidebar-bottom { border-top-color: var(--px-side-edge);}
 .sidebar .mini-profile strong { color: var(--px-side-strong);}
 .sidebar .mini-profile span { color: var(--px-side-meta);}
@@ -839,18 +840,33 @@ html:not(.dark) .sidebar .privacy-note, html:not(.dark) .sidebar .nav-count { --
 .hunt-card .hunt-score { font-family: "Geist Mono Variable", ui-monospace, monospace; font-size: var(--px-fs-num); font-weight: 620; letter-spacing: -.03em; color: var(--px-text);}
 
 /* ── 30. cards que não estouram, e o trilho de passos com ritmo ─────────────────────
-   Entre 701 e 1100px o card voltava a ter QUATRO trilhos (40px | 180px | 70px | 170px) do
-   feature.css, enquanto as áreas declaradas no topo continuam "main score / actions actions":
-   grid com mais trilhos do que áreas é card esgarçado, e a faixa é a de notebook comum.
-   min-width:0 nos filhos é o que impede um 1fr de ser esticado pela URL de um link — sem isso o
-   card empurra a página e o texto que sobra é justamente o do meio, o mais importante. */
-@media (min-width: 701px) and (max-width: 1100px) {
-  .lead-card, .lead-card--primary, .lead-card--utility { grid-template-columns: minmax(0, 1fr) clamp(118px, 15vw, 156px); }
-}
+   min-width:0 nos filhos é o que impede um 1fr de ser esticado pela URL de um link: sem isso o
+   card empurra a página e o texto que sobra é justamente o do meio, o mais importante. As
+   heranças ainda têm grids de 1fr sem isso (hunt-card, queue-row, opportunity-row).
+   A suspeita de que o card ficava com 4 trilhos × 2 áreas entre 701 e 1100px foi MEDIDA, não
+   conjecturada: cascade-check --grid prova que as áreas e os trilhos batem em 16 larguras, e o
+   breakpoint legado do feature.css já perdia na ordem de import — logo, reescrevê-lo ali era
+   ruído (e teria quebrado a faixa 701–900, onde o card passa a 1 coluna de áreas). */
 :is(.lead-card, .hunt-card, .queue-row, .opportunity-row, .next-card, .today-next, .px-row, .px-result, .rp-panel) > * { min-width: 0; }
 :is(.lead-card, .hunt-card, .opportunity-row, .rp-panel, .px-row) a { overflow-wrap: anywhere; }
 .evidence-row a { color: var(--px-accent); white-space: normal; overflow-wrap: anywhere; text-decoration-thickness: 1px; text-underline-offset: 2px; }
-.lead-card { background: var(--px-surface-2); }
 /* as 5 células do trilho só funcionam se tiverem a mesma altura de leitura: a frase do estado
    ocupa sempre duas linhas — min-height e não max-height, para nunca cortar informação */
 .px-hero-steps li p { min-height: calc(2 * 1.5 * var(--px-fs-meta)); }
+
+/* ── 31. painel de pesquisa: a tinta era literal escrita para o ESCURO ────────────────
+   A região `.rp-*` do operations.css recebeu cores próximas de branco como valor de base, sem
+   token e sem par `html.dark`. No tema claro o painel é #fafcfe, e o resultado medido pelo
+   cascade-check --ink era este: título da interpretação 1,16:1, valor do fato 1,28:1, parágrafo
+   1,55:1, pílula do estado 1,51:1. Não é "cinza suave": é texto que não existe. Trocar por token
+   devolve os dois níveis de leitura (fato vs. rótulo) e faz o escuro continuar igual, porque os
+   tokens já são por tema. */
+.rp-panel :is(.rp-headline, .rp-row strong, .rp-row a, .rp-empty strong) { color: var(--px-text);}
+.rp-panel :is(.rp-row .rp-label, .rp-panel-head span, .rp-split h5, .rp-deltas small) { color: var(--px-text-3);}
+.rp-panel :is(.rp-panel-head h4, .rp-foot, .rp-split p, .rp-split li, .rp-empty span, .rp-unverified li) { color: var(--px-text-2);}
+.rp-panel :is(.rp-state) { color: var(--px-text-2);}
+.rp-panel .rp-found .rp-state { color: var(--px-ok);}
+.rp-panel .rp-unknown .rp-state { color: var(--px-warn);}
+.rp-panel .rp-absent .rp-state { color: var(--px-text-3);}
+.rp-panel .rp-deltas b.up { color: var(--px-ok);}
+.rp-panel .rp-deltas b.down { color: var(--px-bad);}

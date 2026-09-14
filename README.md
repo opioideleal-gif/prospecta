@@ -217,14 +217,24 @@ Detalhes de implementação:
 - **Cascata resolvida, não presumida:** `scripts/cascade-check.ts` (`pnpm exec tsx
   scripts/cascade-check.ts`) lê as quatro folhas na ordem real de `main.tsx`, resolve especificidade
   por parte de seletor, `!important`, `@media` (o padrão é desktop 1360px) e `var()`/`color-mix()`/
-  `clamp(...vw...)`, e responde duas perguntas sobre 62 pontos da UI (cards, barra, busca, trilho,
-  ficha, caça): **`--dead`** lista declarações de topo 100% ofuscadas por uma regra idêntica mais
+  `clamp(...vw...)`/`color-mix(…, transparent)` (que preserva alfa — compor contra preto dava
+  contraste falso), expandindo `:is()`/`:where()` em alternância por seletor completo (sem isso,
+  `.rp-panel :is(.rp-headline, …)` não era vista e o auditor dava "limpo" justamente para a regra
+  nova mais importante), e responde três perguntas sobre 75 pontos da UI (cards, barra, busca,
+  trilho, ficha, caça): **`--ink`** resolve tinta E fundo efetivos de cada alvo nos dois temas e
+  mede WCAG — foi assim que se descobriu que o painel de pesquisa tinha `#e3ecf6` sobre `#fafcfe`
+  no tema claro (1,16:1: a interpretação da ficha era invisível, e o `contrast-audit` de pares de
+  token não via porque o valor era literal de camada legada); **`--grid`** confere, em 16 larguras,
+  se `grid-template-columns` e `grid-template-areas` do mesmo card concordam (trilho órfão = faixa
+  de vazio no card); **`--dead`** lista declarações de topo 100% ofuscadas por uma regra idêntica mais
   adiante — código morto que faz "mudei o token e nada aconteceu"; o modo padrão marca toda
   propriedade em que `index`/`feature`/`operations` vencem o `depth.css` (era assim que o score da
   caça vivia num `color:#759c2b !important` fora da paleta, e o título do card em 700 com tinta
   própria). `--values` imprime o valor efetivo de cada alvo, e `cascade-check.ts "<nome>"` abre um
   só, com quem mais escreve aquela propriedade. Serve de linha de base antes/depois de faxina no
-  CSS: a última rodada removeu 82 declarações mortas e o `--values` saiu byte a byte igual.
+  CSS: a última rodada removeu 82 + 23 declarações mortas (o `.px-insight*` órfão do grid que virou
+  trilho) e o `--values` saiu byte a byte igual — quando ele *mudou*, a causa foi dedupe que não
+  olhava o `@media` pai, e isso é sinal de parar, não de seguir.
 - **Navegação:** `NAV_GROUPS` é **um** grupo (`Workspace`: Início, Hoje, Caçar Leads, Resultados,
   Leads, Oportunidades, Playbook) mais `Atalhos` com os três presets de caça — a ordem é a do dia
   de trabalho, não a do pipeline interno. Item em 13,5px/550 com cor de leitura (foi o que tirou a

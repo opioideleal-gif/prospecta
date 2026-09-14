@@ -105,9 +105,50 @@ function parseDecls(body: string): Decl[] {
  * separadamente, e somar as classes do grupo fazia `.nav-item, .shortcut-list button` parecer mais
  * forte do que `.px-side-nav .nav-item` — flag falsa, do tipo que faria "consertar" coisa sã.
  */
+/**
+ * `:is()`/`:where()` são ALTERNÂNCIA de seletores completos, e a especificidade é a do maior ramo.
+ * Sem expandir aqui, `.rp-panel :is(.rp-row strong, .rp-headline)` não casa com
+ * `.rp-panel .rp-headline` e o auditor jura que a camada legada ainda vence — o falso negativo é
+ * tanto mais perigoso quanto mais a camada nova usa :is() para encolher a lista. Limite consciente:
+ * expande um :is() por lado da vírgula (a regra do app não precisa de dois na mesma linha).
+ */
+function splitTop(sel: string): string[] {
+  const out: string[] = [];
+  let buf = "", d = 0;
+  for (const ch of sel) {
+    if (ch === "(" || ch === "[") d++;
+    if (ch === ")" || ch === "]") d--;
+    if (ch === "," && d === 0) { out.push(buf); buf = ""; continue; }
+    buf += ch;
+  }
+  if (buf.trim()) out.push(buf);
+  return out.map((s) => s.trim()).filter(Boolean);
+}
+function expandIs(sel: string): string[] {
+  const out: string[] = [];
+  // vírgula DENTRO de :is() não separa seletores — sem splitTop o `:is(a, b)` virava
+  // [':is(a', ' b)'] e a regra inteira passava despercebida pelo auditor (falso negativo clássico)
+  for (const raw of splitTop(sel)) {
+    const part = raw.trim();
+    const m = part.match(/:is\(([^()]*(?:\([^()]*\)[^()]*)*)\)|:where\(([^()]*(?:\([^()]*\)[^()]*)*)\)/);
+    if (!m) { out.push(part); continue; }
+    const inner = m[1] ?? m[2];
+    const args: string[] = [];
+    let buf = "", d = 0;
+    for (const ch of inner) {
+      if (ch === "(") d++;
+      if (ch === ")") d--;
+      if (ch === "," && d === 0) { args.push(buf.trim()); buf = ""; continue; }
+      buf += ch;
+    }
+    if (buf.trim()) args.push(buf.trim());
+    for (const a of args) out.push(part.replace(m[0], a).replace(/\s+/g, " ").trim());
+  }
+  return out;
+}
 function spec(sel: string): number {
   let best = 0;
-  for (const part of sel.split(",")) {
+  for (const part of expandIs(sel)) {
     const s = part.replace(/@media[^{]*/g, "");
     let b = 0, c = 0;
     b += (s.match(/\.[\w-]+/g) || []).length;
@@ -148,10 +189,9 @@ function compounds(sel: string): string[] {
 }
 function applies(ruleSel: string, target: string): boolean {
   const tp = compounds(target);
-  for (const raw of ruleSel.split(",")) {
-    const part = normalize(raw);
+  for (const part of expandIs(ruleSel)) {
     if (!part) continue;
-    const rp = compounds(part);
+    const rp = compounds(normalize(part));
     if (rp.some((c) => c === ">")) {
       if (rp.join(" ").replace(/\s>/g, " >") === tp.slice(tp.length - rp.length).join(" ")) return true;
     }
@@ -196,7 +236,14 @@ function resolveValue(v: string, theme: "light" | "dark", depth = 0): string {
     const t = /(\d+(?:\.\d+)?)%/.exec(a);
     const colA = resolveValue(a.replace(/\s*\d+(?:\.\d+)?%/, "").trim(), theme, depth + 1);
     const colB = resolveValue(b.trim(), theme, depth + 1);
-    return t ? mix(colA, colB, Number(t[1]) / 100) : colA;
+    if (!t) return colA;
+    // misturar com `transparent` preserva ALFA (é assim que o navegador pinta o tinte de estado
+    // sobre o card); compor contra preto inflava contraste falso — e sumiam defeitos reais.
+    if (/^transparent$/i.test(colB)) {
+      const h = /^#([0-9a-f]{6})$/i.exec(colA);
+      if (h) return `rgba(${parseInt(h[1].slice(0, 2), 16)},${parseInt(h[1].slice(2, 4), 16)},${parseInt(h[1].slice(4, 6), 16)},${(Number(t[1]) / 100).toFixed(3)})`;
+    }
+    return mix(colA, colB, Number(t[1]) / 100);
   });
   out = out.replace(/clamp\(\s*([\d.]+)px\s*,\s*([\d.]+)vw\s*,\s*([\d.]+)px\s*\)/g, (_m, mn, vw, mx) => {
     const px = (Number(vw) * VIEWPORT) / 100;
@@ -277,6 +324,19 @@ const TARGETS: [string, string][] = [
   ["fila · linha", ".queue-row .queue-name"],
   ["hoje · azulejo", ".today-grid .today-tile strong"],
   ["resultados · kpi", ".analytics-kpis strong"],
+  ["pesquisa · painel", ".rp-panel"],
+  ["pesquisa · título", ".rp-panel .rp-headline"],
+  ["pesquisa · rótulo de fato", ".rp-panel .rp-row .rp-label"],
+  ["pesquisa · valor de fato", ".rp-panel .rp-row strong"],
+  ["pesquisa · rodapé", ".rp-panel .rp-foot"],
+  ["pesquisa · estado", ".rp-panel .rp-found .rp-state"],
+  ["pesquisa · subcabeçalho", ".rp-panel .rp-split h5"],
+  ["pesquisa · parágrafo", ".rp-panel .rp-split p"],
+  ["pesquisa · vazio", ".rp-panel .rp-empty span"],
+  ["pesquisa · delta", ".rp-panel .rp-deltas small"],
+  ["pesquisa · atenuado", ".rp-panel .rp-muted"],
+  ["pesquisa · link de evidência", ".rp-panel .evidence-row a"],
+  ["próximo · parágrafo", ".next-card .next-main p"],
   ["pesquisa · linha", ".rp-panel .rp-row"],
 ];
 
@@ -309,6 +369,179 @@ if (process.argv.includes("--dead")) {
   process.exit(0);
 }
 
+/* ── modo --grid: trilhos e áreas do card têm de concordar em TODA largura ─────────────
+   Grid com mais trilhos do que colunas de área deixa trilho órfão (faixa de vazio à direita do
+   card); com menos, sobra área sem trilho e o conteúdo é espremido. As duas propriedades moram em
+   camadas diferentes justamente por causa disso: uma camada legada reescreve grid-template-columns
+   dentro de um breakpoint e as grid-template-areas continuam as do topo — nenhuma "vence" a
+   outra, elas precisam combinar, e é isto que este modo confere largura por largura. */
+if (process.argv.includes("--grid")) {
+  const GRID_TARGETS: [string, string[]][] = [
+    ["card", ["lead-card"]],
+    ["card · primary", ["lead-card", "lead-card--primary"]],
+    ["card · utility", ["lead-card", "lead-card--utility"]],
+    ["hunt-card", ["hunt-card"]],
+    ["queue-row", ["queue-row"]],
+    ["opportunity-row", ["opportunity-row"]],
+    ["next-card", ["next-card"]],
+    ["today-next", ["today-next"]],
+    ["px-result", ["px-result"]],
+    ["hero-row", ["hero-row"]],
+  ];
+  const WIDTHS = [1440, 1280, 1180, 1121, 1120, 1101, 1100, 1024, 901, 900, 820, 701, 700, 560, 430, 360];
+  const mediaMatches = (media: string | null, w: number): boolean => {
+    if (!media) return true;
+    if (/prefers-reduced-motion/.test(media)) return false;
+    for (const cond of media.split(/\band\b/)) {
+      const min = cond.match(/min-width:\s*(\d+)/);
+      const max = cond.match(/max-width:\s*(\d+)/);
+      if (min && Number(min[1]) > w) return false;
+      if (max && Number(max[1]) < w) return false;
+    }
+    return true;
+  };
+  const tracks = (v: string): number => {
+    const items: string[] = [];
+    let buf = "", d = 0;
+    for (const ch of v) {
+      if (ch === "(") d++;
+      if (ch === ")") d--;
+      if (ch === " " && d === 0) { if (buf.trim()) items.push(buf.trim()); buf = ""; } else buf += ch;
+    }
+    if (buf.trim()) items.push(buf.trim());
+    let n = 0;
+    for (const it of items) {
+      const rep = it.match(/^repeat\((\d+)/);
+      n += rep ? Number(rep[1]) : 1;
+    }
+    return n;
+  };
+  const winner = (target: string[], prop: string, w: number): { value: string; file: string; line: number } | null => {
+    let best: { value: string; file: string; line: number } | null = null;
+    let bestKey = -1;
+    rules.forEach((rule, idx) => {
+      if (!mediaMatches(rule.media, w)) return;
+      const d = rule.decls.find((x) => x.prop === prop && !/^\s*$/.test(x.value));
+      if (!d) return;
+      let hit = false;
+      for (const raw of expandIs(rule.sel)) {
+        const part = normalize(raw);
+        if (!part || /[\s>+~]/.test(part)) continue;          // só regras que falam do PRÓPRIO elemento
+        const cls = part.match(/\.[\w-]+/g) || [];
+        if (cls.length && cls.every((c) => target.includes(c.slice(1)))) hit = true;
+      }
+      if (!hit) return;
+      const key = (d.important ? 1e6 : 0) + spec(rule.sel) * 100 + idx;
+      if (key > bestKey) { bestKey = key; best = { value: d.value, file: rule.file, line: rule.line }; }
+    });
+    return best;
+  };
+  let bad = 0;
+  for (const w of WIDTHS) {
+    for (const [name, classes] of GRID_TARGETS) {
+      const cols = winner(classes, "grid-template-columns", w);
+      const ar = winner(classes, "grid-template-areas", w);
+      if (!cols || !ar) continue;
+      const first = (ar.value.match(/"([^"]*)"/) || ["", ""])[1].trim();
+      const a = first ? first.split(/\s+/).length : 0;
+      const c = tracks(cols.value);
+      if (a && a !== c) {
+        bad++;
+        console.log(`${String(w).padStart(4)}px  ${name.padEnd(14)} ${c} trilho(s) × ${a} coluna(s) de área   ← ${cols.file.replace("client/src/", "")}:${cols.line}  { ${cols.value.slice(0, 56)} }`);
+      }
+    }
+  }
+  console.log(`════ grade: ${bad} incompatibilidade(s) de trilhos × áreas em ${WIDTHS.length} larguras ════`);
+  process.exit(bad ? 1 : 0);
+}
+
+function hexToCss(c: [number, number, number, number]): string { return `#${[c[0], c[1], c[2]].map((x) => Math.round(x).toString(16).padStart(2, "0")).join("")}`; }
+
+/* ── modo --ink: a tinta REAL de cada alvo contra o fundo REAL dele, nos dois temas ─────
+   O audit de tokens (scripts/contrast-audit.ts) confere pares de tokens; ele é cego por
+   construção a literal de camada legada — e foi assim que .rp-headline ficou com #e3ecf6
+   (1,16:1) sobre o card #fafcfe do tema claro: texto invisível na peça mais informativa da
+   tela. Este modo resolve o valor EFETIVO pelo mesmo cascata do resto do auditor e mede. */
+if (process.argv.includes("--ink")) {
+  const hex = (v: string): [number, number, number, number] | null => {
+    const m = v.trim().match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+    if (m) {
+      const h = m[1].length === 3 ? m[1].split("").map((c) => c + c).join("") : m[1];
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1];
+    }
+    const r = v.trim().match(/^rgba?\(([^)]+)\)$/i);
+    if (r) {
+      const n = r[1].split(/[\s,/]+/).filter(Boolean).map(Number);
+      return [n[0], n[1], n[2], n.length > 3 ? n[3] : 1];
+    }
+    return null;
+  };
+  const lum = (c: [number, number, number, number]): number => {
+    const f = (x: number) => (x / 255 <= 0.03928 ? x / 255 / 12.92 : ((x / 255 + 0.055) / 1.055) ** 2.4);
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  };
+  const over = (fg: [number, number, number, number], bg: [number, number, number, number]): [number, number, number, number] =>
+    fg[3] >= 1 ? fg : ([fg[0] * fg[3] + bg[0] * (1 - fg[3]), fg[1] * fg[3] + bg[1] * (1 - fg[3]), fg[2] * fg[3] + bg[2] * (1 - fg[3]), 1] as [number, number, number, number]);
+  const ratio = (a: [number, number, number, number], b: [number, number, number, number]): number => {
+    const la = lum(a), lb = lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  };
+  const CARD = /\.lead-card|\.rp-panel|\.hunt-card|\.queue-row|\.next-card|\.opportunity-row|\.lead-modal|\.px-result|\.analytics-card|\.score-/;
+  const pick = (target: string, prop: string, theme: "light" | "dark"): { value: string; file: string; line: number; sel: string } | null => {
+    let best: { value: string; file: string; line: number; sel: string } | null = null;
+    let bestKey = -1;
+    rules.forEach((rule, order) => {
+      const th = themeOf(rule.sel);
+      if (th !== "both" && th !== theme) return;
+      if (!mediaActive(rule.media) || !applies(normalize(rule.sel), target)) return;
+      const d = rule.decls.find((x) => x.prop === prop);
+      if (!d) return;
+      const key = (d.important ? 1e6 : 0) + spec(normalize(rule.sel)) + order / 10000;
+      if (key > bestKey) { bestKey = key; best = { value: resolveValue(d.value, theme), file: rule.file, line: rule.line, sel: rule.sel }; }
+    });
+    return best;
+  };
+  let bad = 0, checked = 0;
+  for (const theme of ["light", "dark"] as const) {
+    console.log(`\n########## ${theme === "light" ? "TEMA CLARO" : "TEMA ESCURO"} — tinta efetiva @ ${VIEWPORT}px`);
+    for (const [name, target] of TARGETS) {
+      const fgDecl = pick(target, "color", theme);
+      if (!fgDecl || !fgDecl.value) continue;
+      // o fundo: sobe a cadeia do alvo até achar uma cor sólida; senão, o plano padrão do tema
+      const chain = [target, ...target.split(/\s+/).slice(0, -1).map((_, i) => target.split(/\s+/)[i])];
+      const layers: [number, number, number, number][] = [];
+      const token = CARD.test(target) ? "--px-surface-2" : "--px-canvas";
+      const base = hex(resolveValue(`var(${token})`, theme))!;
+      let bgFrom = `plano do tema (${token})`;
+      // fundo translúcido (tinta de estado sobre o card) é composto em camadas, como o navegador:
+      // tratar rgba(…,0.14) como cor opaca dava 1,30:1 a uma pílula que na tela é legível
+      for (const step of chain) {
+        for (const prop of ["background-color", "background"]) {
+          const cand = pick(step, prop, theme);
+          if (!cand) continue;
+          const c = hex(cand.value);
+          if (c) { layers.push(c); bgFrom = `${step} ← ${cand.file.replace("client/src/", "")}:${cand.line}`; break; }
+        }
+        if (layers.length) break;
+      }
+      let bg = base;
+      for (const l of layers.reverse()) bg = over(l, bg);
+      const fg = hex(fgDecl.value);
+      if (!fg) continue;                                    // gradiente/currentColor/inherit: fora do escopo
+      const op = pick(target, "opacity", theme);
+      const alpha = op && !Number.isNaN(Number(op.value)) ? Number(op.value) : 1;
+      const ink = over([fg[0], fg[1], fg[2], fg[3] * alpha], bg!);
+      const r = ratio(ink, bg!);
+      checked++;
+      const ok = r >= 4.5;
+      if (!ok) bad++;
+      console.log(`  ${ok ? "✓" : "✗"} ${r.toFixed(2).padStart(5)}  ${name.padEnd(26)} ${fgDecl.value} sobre ${fgDecl ? (bg ? hexToCss(bg) : "?") : ""}  (tinta ${fgDecl.file.replace("client/src/", "")}:${fgDecl.line} [${fgDecl.sel.slice(0, 40)}] · fundo ${bgFrom})`);
+    }
+  }
+  console.log(`\n════ tinta: ${bad} par(es) abaixo de 4,5:1 em ${checked} medições ════`);
+  process.exit(bad ? 1 : 0);
+}
+
 const OLD = new Set(["client/src/index.css", "client/src/feature.css", "client/src/operations.css"]);
 let flags = 0;
 for (const theme of ["light", "dark"] as const) {
@@ -316,6 +549,10 @@ for (const theme of ["light", "dark"] as const) {
   for (const [name, target] of TARGETS) {
     const winner: Record<string, { decl: Decl; rule: Rule; score: number }> = {};
     const writers: Record<string, Set<string>> = {};
+    // maior especificidade com que o depth escreve cada propriedade AQUI: quando o depth só tem uma
+    // regra de ELEMENTO (h1..h5), uma classe de componente vencendo é o CSS funcionando, não herança
+    // por cima — sem este filtro o auditor acusava a própria base tipográfica de "perder".
+    const specDepth: Record<string, number> = {};
     rules.forEach((rule, order) => {
       const th = themeOf(rule.sel);
       if (th !== "both" && th !== theme) return;
@@ -330,6 +567,7 @@ for (const theme of ["light", "dark"] as const) {
         for (const key of group) {
           if (!WATCH.has(key)) continue;
           (writers[key] ||= new Set()).add(rule.file);
+          if (rule.file === "client/src/depth.css") specDepth[key] = Math.max(specDepth[key] ?? -1, spec(normalize(rule.sel)));
           const cand = { decl: { prop, value: decl.value, important: decl.important }, rule, score: s + (decl.important ? 1e6 : 0) };
           const cur = winner[key];
           if (!cur || cand.score > cur.score) winner[key] = cand;
@@ -370,7 +608,7 @@ for (const theme of ["light", "dark"] as const) {
       if (!w) continue;
       const val = resolveValue(w.decl.value, theme);
       const fromFile = w.rule.file;
-      const oldWinsHere = OLD.has(fromFile) && writers[key] && [...writers[key]].some((f) => f === "client/src/depth.css");
+      const oldWinsHere = OLD.has(fromFile) && (specDepth[key] ?? -1) >= 10;
       if (oldWinsHere) {
         flags++;
         lines.push(`   ⚠ ${key.padEnd(14)} ${val.slice(0, 70)}  ← ${fromFile.replace("client/src/", "")}:${w.rule.line} (depth.css também escreve ${key} aqui e PERDE)`);
