@@ -219,11 +219,32 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // React e o pacote de ícones saem do chunk da aplicação: mexer no Prospecta não
+        // invalida o cache do que não mudou. Nome/estrutura de telas ficam como estão.
+        manualChunks(id: string) {
+          if (!id.includes("node_modules")) return undefined;
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return "react";
+          if (/[\\/]node_modules[\\/]lucide-react[\\/]/.test(id)) return "icons";
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port: 3000,
     strictPort: false, // Will find next available port if 3000 is busy
     host: true,
+    // Em dev o Express (server/index.ts) roda em outra porta e o Vite repassa /api para ele.
+    // Sem isso, "Caçar Leads" e "Pesquisar site" retornam 404 no pnpm dev.
+    // Suba a API com: pnpm dev:api
+    proxy: {
+      "/api": {
+        target: process.env.API_PROXY_TARGET || "http://127.0.0.1:8787",
+        changeOrigin: true,
+      },
+    },
     allowedHosts: [
       ".manuspre.computer",
       ".manus.computer",

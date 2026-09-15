@@ -5,13 +5,19 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite --host",
+    "dev:api": "PORT=8787 tsx watch server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
-    "check": "tsc --noEmit",
-    "format": "prettier --write ."
+    "check": "tsc --noEmit && tsx scripts/cascade-check.ts --lint",
+    "lint:css": "tsx scripts/cascade-check.ts --lint",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -46,6 +52,7 @@
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
     "framer-motion": "^12.23.22",
+    "gsap": "^3.15.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.453.0",
     "nanoid": "^5.1.5",
@@ -77,6 +84,7 @@
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.25.0",
+    "happy-dom": "^20.14.5",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
     "prettier": "^3.6.2",

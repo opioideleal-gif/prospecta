@@ -5,6 +5,9 @@
     "incremental": true,
     "tsBuildInfoFile": "./node_modules/typescript/tsbuildinfo",
     "noEmit": true,
+    // sem target o TS caía em ES5 e proibia iterar Set/Map e matchAll — código
+    // que o Vite/esbuild e o Node 20+ rodam nativamente.
+    "target": "es2022",
     "module": "ESNext",
     "strict": true,
     "lib": ["esnext", "dom", "dom.iterable"],

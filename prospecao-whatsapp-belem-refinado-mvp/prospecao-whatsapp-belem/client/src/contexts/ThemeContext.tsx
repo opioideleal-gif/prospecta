@@ -57,8 +57,11 @@ export function ThemeProvider({
 
 export function useTheme() {
   const context = useContext(ThemeContext);
+  // Sem provider não há alternância a oferecer — mas a UI também não deve depender de estar
+  // montada dentro de App para existir (os testes de fluxo renderizam <Home /> direto).
   if (!context) {
-    throw new Error("useTheme must be used within ThemeProvider");
+    const dark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    return { theme: (dark ? "dark" : "light") as Theme, toggleTheme: undefined, switchable: false };
   }
   return context;
 }
